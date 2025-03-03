@@ -1,42 +1,56 @@
-require('dotenv').config();
 const express = require('express');
+const dotenv = require('dotenv');
+const morgan = require('morgan');
 const cors = require('cors');
 const helmet = require('helmet');
-const morgan = require('morgan');
-const connectDB = require('./config/database');
+const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
+const errorHandler = require('./middlewares/error');
 
-// Initialize express app
-const app = express();
+// Load env vars
+dotenv.config();
 
 // Connect to MongoDB
-connectDB();
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => console.log('MongoDB Connection Error:', err));
 
-// Middleware
-app.use(cors({
-    origin: process.env.CORS_ORIGIN,
-    credentials: true
-}));
-app.use(helmet());
-app.use(morgan('dev'));
+const app = express();
+
+// Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Cookie parser
+app.use(cookieParser());
+
+// Dev logging middleware
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Security headers
+app.use(helmet());
+
+// CORS
+app.use(cors({
+  origin: process.env.CORS_ORIGIN,
+  credentials: true
+}));
+
+// Welcome route
 app.get('/', (req, res) => {
-    res.json({ message: 'Bienvenue sur l\'API EcoDrive' });
+  res.json({ message: 'Bienvenue sur l\'API EcoDrive' });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        success: false,
-        error: 'Une erreur est survenue sur le serveur'
-    });
-});
+// Mount routers
+app.use('/api/v1/auth', require('./routes/auth'));
 
-// Start server
+// Error handler
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-    console.log(`Serveur démarré sur le port ${PORT} en mode ${process.env.NODE_ENV}`);
+  console.log(`Serveur démarré sur le port ${PORT} en mode ${process.env.NODE_ENV}`);
 });
