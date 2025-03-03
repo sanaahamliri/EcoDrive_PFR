@@ -45,6 +45,7 @@ app.get('/', (req, res) => {
 
 // Mount routers
 app.use('/api/v1/auth', require('./routes/auth'));
+app.use('/api/v1/rides', require('./routes/rides'));
 
 // Error handler
 app.use(errorHandler);
