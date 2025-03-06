@@ -11,12 +11,12 @@ const {
 
 const router = express.Router();
 
-const { protect, authorize } = require('../middlewares/auth');
+const { protect } = require('../middlewares/auth');
 
 router
   .route('/')
   .get(getRides)
-  .post(protect, authorize('driver', 'admin'), createRide);
+  .post(protect, createRide);
 
 router
   .route('/:id')

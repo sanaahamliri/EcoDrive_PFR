@@ -18,7 +18,7 @@ router.use(protect);
 
 router.get('/me', getProfile);
 router.put('/me', updateProfile);
-router.put('/me/driver', authorize('driver'), updateDriverProfile);
+router.put('/me/driver', updateDriverProfile);
 router.put('/me/preferences', updatePreferences);
 router.put('/me/photo', uploadProfilePhoto);
 router.get('/me/trips', getUserTrips);

@@ -47,15 +47,6 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  verificationToken: String,
-  verificationTokenExpire: Date,
-  resetPasswordToken: String,
-  resetPasswordExpire: Date,
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  // Pour les conducteurs
   driverInfo: {
     carModel: String,
     carYear: Number,
@@ -66,7 +57,6 @@ const userSchema = new mongoose.Schema({
       default: false
     }
   },
-  // Statistiques utilisateur
   stats: {
     totalTrips: {
       type: Number,
@@ -84,12 +74,15 @@ const userSchema = new mongoose.Schema({
       type: Number,
       default: 0
     }
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true
 });
 
-// Crypter le mot de passe avant la sauvegarde
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
     next();
@@ -98,35 +91,16 @@ userSchema.pre('save', async function(next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Générer le token JWT
 userSchema.methods.getSignedJwtToken = function() {
   return jwt.sign(
     { id: this._id },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE }
+    process.env.JWT_SECRET || 'secret_dev_123456',
+    { expiresIn: process.env.JWT_EXPIRE || '30d' }
   );
 };
 
-// Vérifier le mot de passe
 userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
-};
-
-// Générer et hasher le token de réinitialisation du mot de passe
-userSchema.methods.getResetPasswordToken = function() {
-  // Générer le token
-  const resetToken = crypto.randomBytes(20).toString('hex');
-
-  // Hasher le token et définir resetPasswordToken
-  this.resetPasswordToken = crypto
-    .createHash('sha256')
-    .update(resetToken)
-    .digest('hex');
-
-  // Définir l'expiration
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-  return resetToken;
 };
 
 module.exports = mongoose.model('User', userSchema);

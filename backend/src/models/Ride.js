@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+const pointSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ['Point'],
+    default: 'Point'
+  },
+  coordinates: {
+    type: [Number],
+    required: true
+  }
+});
+
 const rideSchema = new mongoose.Schema({
   driver: {
     type: mongoose.Schema.ObjectId,
@@ -11,46 +23,31 @@ const rideSchema = new mongoose.Schema({
       type: String,
       required: [true, 'La ville de départ est requise']
     },
-    location: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        default: 'Point'
-      },
-      coordinates: {
-        type: [Number],
-        required: true
-      }
-    }
+    address: {
+      type: String,
+      required: [true, 'L\'adresse de départ est requise']
+    },
+    coordinates: pointSchema
   },
   destination: {
     city: {
       type: String,
       required: [true, 'La ville de destination est requise']
     },
-    location: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        default: 'Point'
-      },
-      coordinates: {
-        type: [Number],
-        required: true
-      }
-    }
+    address: {
+      type: String,
+      required: [true, 'L\'adresse de destination est requise']
+    },
+    coordinates: pointSchema
   },
   departureTime: {
     type: Date,
     required: [true, 'L\'heure de départ est requise']
   },
-  estimatedArrivalTime: {
-    type: Date,
-    required: [true, 'L\'heure d\'arrivée estimée est requise']
-  },
   price: {
     type: Number,
-    required: [true, 'Le prix est requis']
+    required: [true, 'Le prix est requis'],
+    min: [0, 'Le prix doit être positif']
   },
   availableSeats: {
     type: Number,
@@ -61,7 +58,8 @@ const rideSchema = new mongoose.Schema({
   passengers: [{
     user: {
       type: mongoose.Schema.ObjectId,
-      ref: 'User'
+      ref: 'User',
+      required: true
     },
     status: {
       type: String,
@@ -94,46 +92,7 @@ const rideSchema = new mongoose.Schema({
     pets: {
       type: Boolean,
       default: false
-    },
-    airConditioned: {
-      type: Boolean,
-      default: true
     }
-  },
-  route: {
-    type: {
-      type: String,
-      enum: ['LineString'],
-      default: 'LineString'
-    },
-    coordinates: {
-      type: [[Number]],
-      required: true
-    }
-  },
-  distance: {
-    type: Number,
-    required: true
-  },
-  duration: {
-    type: Number,
-    required: true
-  },
-  description: {
-    type: String,
-    maxLength: [500, 'La description ne peut pas dépasser 500 caractères']
-  },
-  recurrence: {
-    isRecurrent: {
-      type: Boolean,
-      default: false
-    },
-    frequency: {
-      type: String,
-      enum: ['daily', 'weekly', 'monthly', null],
-      default: null
-    },
-    endDate: Date
   }
 }, {
   timestamps: true,
@@ -141,12 +100,9 @@ const rideSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexer les champs géographiques
-rideSchema.index({ 'departure.location': '2dsphere' });
-rideSchema.index({ 'destination.location': '2dsphere' });
-rideSchema.index({ 'route': '2dsphere' });
+rideSchema.index({ 'departure.coordinates': '2dsphere' });
+rideSchema.index({ 'destination.coordinates': '2dsphere' });
 
-// Virtual pour le nombre de places réservées
 rideSchema.virtual('bookedSeats').get(function() {
   return this.passengers.reduce((total, passenger) => {
     if (passenger.status === 'accepted') {
@@ -156,15 +112,13 @@ rideSchema.virtual('bookedSeats').get(function() {
   }, 0);
 });
 
-// Virtual pour le nombre de places restantes
 rideSchema.virtual('remainingSeats').get(function() {
   return this.availableSeats - this.bookedSeats;
 });
 
-// Middleware pour vérifier les places disponibles
 rideSchema.pre('save', function(next) {
   if (this.bookedSeats > this.availableSeats) {
-    next(new Error('Le nombre de places réservées ne peut pas dépasser le nombre de places disponibles'));
+    return next(new Error('Le nombre total de places réservées ne peut pas dépasser le nombre de places disponibles.'));
   }
   next();
 });

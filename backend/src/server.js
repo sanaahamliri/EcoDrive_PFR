@@ -11,7 +11,7 @@ const errorHandler = require('./middlewares/error');
 
 // Load env vars
 dotenv.config();
-
+console.log(process.env.MONGODB_URI)
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB Connected'))
