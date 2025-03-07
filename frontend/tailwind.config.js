@@ -1,8 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
+  content: ['./src/**/*.{js,jsx,ts,tsx}'],
+  darkMode: false,
   theme: {
     extend: {
       colors: {
@@ -10,6 +9,9 @@ module.exports = {
         secondary: '#1976D2'
       }
     },
+  },
+  variants: {
+    extend: {},
   },
   plugins: [],
 }
