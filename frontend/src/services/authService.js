@@ -19,6 +19,7 @@ class AuthService {
       
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       
       return response.data;
@@ -38,6 +39,24 @@ class AuthService {
 
   static logout() {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+
+  static getUser() {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  }
+
+  static getToken() {
+    return localStorage.getItem('token');
+  }
+
+  static isAuthenticated() {
+    return !!this.getToken() && !!this.getUser();
+  }
+
+  static updateUser(userData) {
+    localStorage.setItem('user', JSON.stringify(userData));
   }
 }
 
