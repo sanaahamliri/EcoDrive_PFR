@@ -1,14 +1,10 @@
-export const API_BASE_URL = 'http://localhost:5000/api';
-
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: `${API_BASE_URL}/auth/login`,
-    REGISTER: `${API_BASE_URL}/auth/register`,
-    LOGOUT: `${API_BASE_URL}/auth/logout`,
-  },
-  RIDES: {
-    CREATE: `${API_BASE_URL}/rides`,
-    LIST: `${API_BASE_URL}/rides`,
-    SEARCH: `${API_BASE_URL}/rides/search`,
-  },
+    LOGIN: '/api/v1/auth/login',
+    REGISTER: '/api/v1/auth/register',
+    LOGOUT: '/api/v1/auth/logout',
+    ME: '/api/v1/auth/me'
+  }
 };
+
+export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'; 
