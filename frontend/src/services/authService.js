@@ -1,47 +1,49 @@
-import axios from 'axios';
-import { API_URL, API_ENDPOINTS } from '../config/api';
-
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  withCredentials: true
-});
+import api from './api/axiosConfig';
+import { API_ENDPOINTS } from '../config/api';
 
 class AuthService {
-  static async login(email, password) {
-    try {
-      const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, {
-        email,
-        password
-      });
-      
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-      }
-      
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || 'Une erreur est survenue';
-    }
-  }
-
   static async register(userData) {
     try {
       const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userData);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || 'Une erreur est survenue';
+      throw error.message || 'Erreur lors de l\'inscription';
     }
   }
 
-  static logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  static async login(email, password) {
+    try {
+      const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      return response.data;
+    } catch (error) {
+      throw error.message || 'Erreur lors de la connexion';
+    }
   }
 
+  static async logout() {
+    try {
+      await api.get(API_ENDPOINTS.AUTH.LOGOUT);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
+  }
+
+  static async getCurrentUser() {
+    try {
+      const response = await api.get(API_ENDPOINTS.AUTH.ME);
+      return response.data;
+    } catch (error) {
+      throw error.message || 'Erreur lors de la récupération du profil';
+    }
+  }
+
+  // Méthodes utilitaires
   static getUser() {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
@@ -55,8 +57,9 @@ class AuthService {
     return !!this.getToken() && !!this.getUser();
   }
 
-  static updateUser(userData) {
-    localStorage.setItem('user', JSON.stringify(userData));
+  static hasRole(role) {
+    const user = this.getUser();
+    return user && user.role === role;
   }
 }
 
