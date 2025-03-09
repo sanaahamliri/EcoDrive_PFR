@@ -40,9 +40,9 @@ if (process.env.NODE_ENV === 'development') {
 // Security headers
 app.use(helmet());
 
-// CORS
+// Configuration CORS
 app.use(cors({
-  origin: process.env.CORS_ORIGIN,
+  origin: ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true
 }));
 
