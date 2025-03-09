@@ -42,10 +42,17 @@ function App() {
           } />
 
           {/* Routes conducteur */}
+          <Route
+            path="driver/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['driver']}>
+                <DriverDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="driver/*" element={
             <ProtectedRoute allowedRoles={['driver']}>
               <Routes>
-                <Route path="dashboard" element={<DriverDashboard />} />
                 <Route path="profile" element={<DriverProfile />} />
                 <Route path="trips" element={<ManageTrips />} />
               </Routes>

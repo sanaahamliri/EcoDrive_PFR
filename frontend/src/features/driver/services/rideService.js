@@ -2,7 +2,6 @@ import api from '../../../services/api/axiosConfig';
 import { API_ENDPOINTS } from '../../../config/api';
 
 class DriverRideService {
-  // Créer un nouveau trajet
   static async createRide(rideData) {
     try {
       const response = await api.post(API_ENDPOINTS.RIDES.BASE, rideData);
@@ -12,7 +11,6 @@ class DriverRideService {
     }
   }
 
-  // Obtenir tous les trajets du conducteur
   static async getMyRides() {
     try {
       const response = await api.get(API_ENDPOINTS.USERS.TRIPS);
@@ -22,7 +20,6 @@ class DriverRideService {
     }
   }
 
-  // Mettre à jour un trajet
   static async updateRide(rideId, updateData) {
     try {
       const response = await api.put(`${API_ENDPOINTS.RIDES.BASE}/${rideId}`, updateData);
@@ -32,7 +29,6 @@ class DriverRideService {
     }
   }
 
-  // Supprimer un trajet
   static async deleteRide(rideId) {
     try {
       const response = await api.delete(`${API_ENDPOINTS.RIDES.BASE}/${rideId}`);
