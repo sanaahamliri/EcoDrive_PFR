@@ -204,3 +204,15 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
     data: ride
   });
 });
+
+// @desc    Obtenir les trajets du conducteur connecté
+exports.getMyRides = asyncHandler(async (req, res) => {
+  const rides = await Ride.find({ driver: req.user.id })
+    .sort({ departureTime: -1 });
+
+  res.status(200).json({
+    success: true,
+    count: rides.length,
+    data: rides
+  });
+});
