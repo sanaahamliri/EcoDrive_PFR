@@ -1,41 +1,36 @@
-import api from '../../../services/api/axiosConfig';
+import axios from 'axios';
+import { API_URL } from '../../../config/api';
 
 class DriverRideService {
-  static async createRide(rideData) {
-    try {
-      const response = await api.post('/api/v1/rides', rideData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || 'Erreur lors de la création du trajet';
-    }
+  // Obtenir tous les trajets du conducteur
+  async getMyRides() {
+    const response = await axios.get(`${API_URL}/rides/my-rides`);
+    return response.data;
   }
 
-  static async getMyRides() {
-    try {
-      const response = await api.get('/api/v1/rides/my-rides');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || 'Erreur lors de la récupération des trajets';
-    }
+  // Créer un nouveau trajet
+  async createRide(rideData) {
+    const response = await axios.post(`${API_URL}/rides`, rideData);
+    return response.data;
   }
 
-  static async updateRide(rideId, updateData) {
-    try {
-      const response = await api.put(`/api/v1/rides/${rideId}`, updateData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || 'Erreur lors de la mise à jour du trajet';
-    }
+  // Mettre à jour un trajet
+  async updateRide(rideId, updateData) {
+    const response = await axios.put(`${API_URL}/rides/${rideId}`, updateData);
+    return response.data;
   }
 
-  static async deleteRide(rideId) {
-    try {
-      const response = await api.delete(`/api/v1/rides/${rideId}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || 'Erreur lors de la suppression du trajet';
-    }
+  // Supprimer un trajet
+  async deleteRide(rideId) {
+    const response = await axios.delete(`${API_URL}/rides/${rideId}`);
+    return response.data;
+  }
+
+  // Obtenir les détails d'un trajet spécifique
+  async getRideDetails(rideId) {
+    const response = await axios.get(`${API_URL}/rides/${rideId}`);
+    return response.data;
   }
 }
 
-export default DriverRideService; 
+export default new DriverRideService(); 
