@@ -18,10 +18,12 @@ const DriverDashboard = () => {
   const loadTrips = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await DriverRideService.getMyRides();
-      setTrips(response.data);
+      setTrips(response.data || []);
     } catch (err) {
-      setError('Erreur lors du chargement des trajets');
+      console.error('Erreur de chargement:', err);
+      setError(err.message || 'Erreur lors du chargement des trajets');
     } finally {
       setLoading(false);
     }
