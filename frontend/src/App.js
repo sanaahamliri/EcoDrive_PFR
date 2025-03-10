@@ -28,53 +28,53 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainLayout />}>
-          {/* Routes publiques */}
+        {/* Routes publiques avec MainLayout */}
+        <Route element={<MainLayout />}>
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
-
-          {/* Routes utilisateur */}
-          <Route path="user/*" element={
-            <ProtectedRoute allowedRoles={['user']}>
-              <Routes>
-                <Route path="dashboard" element={<UserDashboard />} />
-                <Route path="profile" element={<UserProfile />} />
-                <Route path="search" element={<SearchTrips />} />
-              </Routes>
-            </ProtectedRoute>
-          } />
-
-          {/* Routes conducteur */}
-          <Route
-            path="/driver/*"
-            element={
-              <ProtectedRoute allowedRoles={['driver']}>
-                <DriverLayout>
-                  <Routes>
-                    <Route path="dashboard" element={<DriverDashboard />} />
-                    <Route path="trips" element={<ManageTrips />} />
-                    <Route path="bookings" element={<Bookings />} />
-                    <Route path="stats" element={<Statistics />} />
-                    <Route path="settings" element={<Settings />} />
-                    <Route path="profile" element={<Profile />} />
-                  </Routes>
-                </DriverLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Routes admin */}
-          <Route path="admin/*" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Routes>
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="users" element={<ManageUsers />} />
-                <Route path="settings" element={<Settings />} />
-              </Routes>
-            </ProtectedRoute>
-          } />
         </Route>
+
+        {/* Routes utilisateur avec MainLayout */}
+        <Route path="user" element={
+          <ProtectedRoute allowedRoles={['user']}>
+            <MainLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="dashboard" element={<UserDashboard />} />
+          <Route path="profile" element={<UserProfile />} />
+          <Route path="search" element={<SearchTrips />} />
+        </Route>
+
+        {/* Routes conducteur avec DriverLayout (sans MainLayout) */}
+        <Route
+          path="driver/*"
+          element={
+            <ProtectedRoute allowedRoles={['driver']}>
+              <DriverLayout>
+                <Routes>
+                  <Route path="dashboard" element={<DriverDashboard />} />
+                  <Route path="trips" element={<ManageTrips />} />
+                  <Route path="bookings" element={<Bookings />} />
+                  <Route path="stats" element={<Statistics />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="profile" element={<Profile />} />
+                </Routes>
+              </DriverLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Routes admin avec son propre layout (à créer) */}
+        <Route path="admin/*" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Routes>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<ManageUsers />} />
+              <Route path="settings" element={<Settings />} />
+            </Routes>
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );

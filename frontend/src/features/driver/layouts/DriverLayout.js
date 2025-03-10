@@ -5,11 +5,11 @@ import {
   CalendarIcon, 
   UserGroupIcon, 
   ChartBarIcon,
-  CogIcon,
+  Cog6ToothIcon,
   BellIcon,
-  MenuIcon,
-  XIcon
-} from '@heroicons/react/outline';
+  Bars3Icon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
 import AuthService from '../../../services/authService';
 
 const navigation = [
@@ -17,7 +17,7 @@ const navigation = [
   { name: 'Mes trajets', href: '/driver/trips', icon: CalendarIcon },
   { name: 'Réservations', href: '/driver/bookings', icon: UserGroupIcon },
   { name: 'Statistiques', href: '/driver/stats', icon: ChartBarIcon },
-  { name: 'Paramètres', href: '/driver/settings', icon: CogIcon },
+  { name: 'Paramètres', href: '/driver/settings', icon: Cog6ToothIcon },
 ];
 
 const DriverLayout = ({ children }) => {
@@ -27,6 +27,7 @@ const DriverLayout = ({ children }) => {
   const navigate = useNavigate();
   const user = AuthService.getUser();
 
+  // Calculer le pourcentage de complétion du profil
   const calculateProfileCompletion = () => {
     const requiredFields = [
       user.firstName,
@@ -61,7 +62,7 @@ const DriverLayout = ({ children }) => {
               className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
               onClick={() => setSidebarOpen(false)}
             >
-              <XIcon className="h-6 w-6 text-white" />
+              <XMarkIcon className="h-6 w-6 text-white" />
             </button>
           </div>
           {/* Contenu Sidebar Mobile */}
@@ -135,7 +136,7 @@ const DriverLayout = ({ children }) => {
                 className="lg:hidden px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
                 onClick={() => setSidebarOpen(true)}
               >
-                <MenuIcon className="h-6 w-6" />
+                <Bars3Icon className="h-6 w-6" />
               </button>
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-4">

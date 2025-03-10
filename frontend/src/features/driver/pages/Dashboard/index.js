@@ -2,40 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { 
   CurrencyDollarIcon,
   UserGroupIcon,
-  LocationMarkerIcon,
-  StarIcon
-} from '@heroicons/react/outline';
+  MapPinIcon,
+  CalendarIcon
+} from '@heroicons/react/24/outline';
 import CreateTripForm from '../../components/TripManagement/CreateTripForm';
 import TripList from '../../components/TripManagement/TripList';
-import EditTripForm from '../../components/TripManagement/EditTripForm';
 import DriverRideService from '../../services/rideService';
+import EditTripForm from '../../components/TripManagement/EditTripForm';
 
-const StatCard = ({ title, value, icon: Icon, change }) => (
-  <div className="bg-white overflow-hidden shadow rounded-lg">
-    <div className="p-5">
-      <div className="flex items-center">
-        <div className="flex-shrink-0">
-          <Icon className="h-6 w-6 text-gray-400" />
-        </div>
-        <div className="ml-5 w-0 flex-1">
-          <dl>
-            <dt className="text-sm font-medium text-gray-500 truncate">
-              {title}
-            </dt>
-            <dd className="flex items-baseline">
-              <div className="text-2xl font-semibold text-gray-900">
-                {value}
-              </div>
-              {change && (
-                <div className={`ml-2 flex items-baseline text-sm font-semibold ${
-                  change >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {change >= 0 ? '+' : ''}{change}%
-                </div>
-              )}
-            </dd>
-          </dl>
-        </div>
+const StatCard = ({ title, value, icon: Icon, description }) => (
+  <div className="bg-white p-6 rounded-lg shadow">
+    <div className="flex items-center">
+      <div className="p-3 rounded-full bg-green-100">
+        <Icon className="h-6 w-6 text-green-600" />
+      </div>
+      <div className="ml-4">
+        <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+        <p className="text-3xl font-bold text-green-600">{value}</p>
+        {description && (
+          <p className="text-sm text-gray-500">{description}</p>
+        )}
       </div>
     </div>
   </div>
@@ -47,9 +33,14 @@ const DriverDashboard = () => {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [stats, setStats] = useState({
+    totalTrips: 0,
+    upcomingTrips: 0,
+    totalRevenue: 0,
+    totalPassengers: 0
+  });
   const [editingTrip, setEditingTrip] = useState(null);
 
-  // Charger les trajets au chargement du composant
   useEffect(() => {
     loadTrips();
   }, []);
@@ -60,6 +51,24 @@ const DriverDashboard = () => {
       setError('');
       const response = await DriverRideService.getMyRides();
       setTrips(response.data || []);
+      
+      // Calculer les statistiques
+      const now = new Date();
+      const upcomingTrips = response.data.filter(trip => new Date(trip.departureTime) > now);
+      const revenue = response.data.reduce((total, trip) => {
+        return total + (trip.price * (trip.passengers?.length || 0));
+      }, 0);
+      const passengers = response.data.reduce((total, trip) => {
+        return total + (trip.passengers?.length || 0);
+      }, 0);
+
+      setStats({
+        totalTrips: response.data.length,
+        upcomingTrips: upcomingTrips.length,
+        totalRevenue: revenue,
+        totalPassengers: passengers
+      });
+
     } catch (err) {
       console.error('Erreur de chargement:', err);
       setError(err.message || 'Erreur lors du chargement des trajets');
@@ -71,7 +80,7 @@ const DriverDashboard = () => {
   const handleCreateSuccess = () => {
     setShowCreateForm(false);
     setSuccessMessage('Trajet créé avec succès !');
-    loadTrips(); // Recharger la liste des trajets
+    loadTrips();
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
@@ -100,91 +109,88 @@ const DriverDashboard = () => {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="sm:flex sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
+    <div className="p-6">
+      {/* En-tête */}
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-semibold text-gray-900">Tableau de bord</h1>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center"
         >
+          <CalendarIcon className="h-5 w-5 mr-2" />
           Proposer un trajet
         </button>
       </div>
 
-      {/* Messages de succès/erreur */}
+      {/* Messages */}
       {successMessage && (
-        <div className="mt-4 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded">
+        <div className="mb-6 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded">
           {successMessage}
         </div>
       )}
       {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
           {error}
         </div>
       )}
 
       {/* Statistiques */}
-      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
-          title="Revenus totaux"
-          value="2,500 DH"
-          icon={CurrencyDollarIcon}
-          change={12}
+          title="Trajets proposés"
+          value={stats.totalTrips}
+          icon={MapPinIcon}
         />
         <StatCard
-          title="Passagers transportés"
-          value="48"
+          title="Trajets à venir"
+          value={stats.upcomingTrips}
+          icon={CalendarIcon}
+        />
+        <StatCard
+          title="Passagers"
+          value={stats.totalPassengers}
           icon={UserGroupIcon}
-          change={4}
         />
         <StatCard
-          title="Trajets effectués"
-          value="24"
-          icon={LocationMarkerIcon}
-          change={-2}
-        />
-        <StatCard
-          title="Note moyenne"
-          value="4.8"
-          icon={StarIcon}
-          change={8}
+          title="Revenus"
+          value={`${stats.totalRevenue} DH`}
+          icon={CurrencyDollarIcon}
         />
       </div>
 
-      {/* Trajets récents */}
-      <div className="mt-8">
-        <div className="sm:flex sm:items-center">
-          <div className="sm:flex-auto">
-            <h2 className="text-xl font-semibold text-gray-900">Trajets récents</h2>
-            <p className="mt-2 text-sm text-gray-700">
-              Liste de vos derniers trajets proposés et leur statut.
-            </p>
-          </div>
+      {/* Formulaire de création */}
+      {showCreateForm && (
+        <div className="mb-8">
+          <CreateTripForm 
+            onSuccess={handleCreateSuccess}
+            onCancel={() => setShowCreateForm(false)}
+          />
         </div>
+      )}
 
-        {loading ? (
-          <div className="mt-6 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-          </div>
-        ) : (
-          <div className="mt-6">
+      {/* Liste des trajets */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-medium text-gray-900">
+            Mes trajets récents
+          </h2>
+        </div>
+        <div className="p-6">
+          {loading ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+            </div>
+          ) : (
             <TripList
               trips={trips}
               onDelete={handleDelete}
               onUpdate={(trip) => setEditingTrip(trip)}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Modals */}
-      {showCreateForm && (
-        <CreateTripForm
-          onSuccess={handleCreateSuccess}
-          onCancel={() => setShowCreateForm(false)}
-        />
-      )}
-      
+      {/* Modal de modification */}
       {editingTrip && (
         <EditTripForm
           trip={editingTrip}

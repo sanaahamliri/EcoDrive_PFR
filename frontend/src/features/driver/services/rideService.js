@@ -1,34 +1,38 @@
-import axios from 'axios';
-import { API_URL } from '../../../config/api';
+import axiosInstance from '../../../config/axios';
 
 class DriverRideService {
-  // Obtenir tous les trajets du conducteur
   async getMyRides() {
-    const response = await axios.get(`${API_URL}/rides/my-rides`);
+    const response = await axiosInstance.get('/api/v1/rides/my-rides');
     return response.data;
   }
 
-  // Créer un nouveau trajet
   async createRide(rideData) {
-    const response = await axios.post(`${API_URL}/rides`, rideData);
+    const response = await axiosInstance.post('/api/v1/rides', rideData);
     return response.data;
   }
 
-  // Mettre à jour un trajet
   async updateRide(rideId, updateData) {
-    const response = await axios.put(`${API_URL}/rides/${rideId}`, updateData);
+    const response = await axiosInstance.put(`/api/v1/rides/${rideId}`, updateData);
     return response.data;
   }
 
-  // Supprimer un trajet
   async deleteRide(rideId) {
-    const response = await axios.delete(`${API_URL}/rides/${rideId}`);
+    const response = await axiosInstance.delete(`/api/v1/rides/${rideId}`);
     return response.data;
   }
 
-  // Obtenir les détails d'un trajet spécifique
   async getRideDetails(rideId) {
-    const response = await axios.get(`${API_URL}/rides/${rideId}`);
+    const response = await axiosInstance.get(`/api/v1/rides/${rideId}`);
+    return response.data;
+  }
+
+  async bookRide(rideId, bookingData) {
+    const response = await axiosInstance.post(`/api/v1/rides/${rideId}/book`, bookingData);
+    return response.data;
+  }
+
+  async cancelBooking(rideId) {
+    const response = await axiosInstance.delete(`/api/v1/rides/${rideId}/book`);
     return response.data;
   }
 }
