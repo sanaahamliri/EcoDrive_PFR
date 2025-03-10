@@ -14,6 +14,8 @@ const router = express.Router();
 
 const { protect } = require('../middlewares/auth');
 
+router.get('/my-rides', protect, getMyRides);
+
 router
   .route('/')
   .get(getRides)
@@ -29,7 +31,5 @@ router
   .route('/:id/book')
   .post(protect, bookRide)
   .delete(protect, cancelBooking);
-
-router.get('/my-rides', protect, getMyRides);
 
 module.exports = router;
