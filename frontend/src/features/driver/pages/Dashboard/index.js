@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CreateTripForm from '../../components/TripManagement/CreateTripForm';
 import TripList from '../../components/TripManagement/TripList';
 import DriverRideService from '../../services/rideService';
+import EditTripForm from '../../components/TripManagement/EditTripForm';
 
 const DriverDashboard = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -9,6 +10,7 @@ const DriverDashboard = () => {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [editingTrip, setEditingTrip] = useState(null);
 
   // Charger les trajets au chargement du composant
   useEffect(() => {
@@ -49,8 +51,15 @@ const DriverDashboard = () => {
     }
   };
 
-  const handleUpdate = (trip) => {
-    console.log('Modification du trajet:', trip);
+  const handleUpdate = async (tripData) => {
+    try {
+      await DriverRideService.updateRide(editingTrip._id, tripData);
+      setSuccessMessage('Trajet modifié avec succès !');
+      setEditingTrip(null);
+      loadTrips();
+    } catch (err) {
+      setError(err.message || 'Erreur lors de la modification du trajet');
+    }
   };
 
   return (
@@ -96,10 +105,18 @@ const DriverDashboard = () => {
           <TripList
             trips={trips}
             onDelete={handleDelete}
-            onUpdate={handleUpdate}
+            onUpdate={(trip) => setEditingTrip(trip)}
           />
         )}
       </div>
+
+      {editingTrip && (
+        <EditTripForm
+          trip={editingTrip}
+          onUpdate={handleUpdate}
+          onCancel={() => setEditingTrip(null)}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white p-6 rounded-lg shadow">
