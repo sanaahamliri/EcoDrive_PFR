@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/protected/ProtectedRoute';
+import DriverLayout from './features/driver/layouts/DriverLayout';
 
 // Pages publiques
 import Home from './pages/Home';
@@ -19,6 +20,9 @@ import DriverProfile from './features/driver/pages/Profile';
 import ManageTrips from './features/driver/pages/Trips';
 import ManageUsers from './features/admin/pages/Users';
 import Settings from './features/admin/pages/Settings';
+import Bookings from './features/driver/pages/Bookings';
+import Statistics from './features/driver/pages/Statistics';
+import Profile from './features/driver/pages/Profile';
 
 function App() {
   return (
@@ -43,21 +47,22 @@ function App() {
 
           {/* Routes conducteur */}
           <Route
-            path="driver/dashboard"
+            path="/driver/*"
             element={
               <ProtectedRoute allowedRoles={['driver']}>
-                <DriverDashboard />
+                <DriverLayout>
+                  <Routes>
+                    <Route path="dashboard" element={<DriverDashboard />} />
+                    <Route path="trips" element={<ManageTrips />} />
+                    <Route path="bookings" element={<Bookings />} />
+                    <Route path="stats" element={<Statistics />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="profile" element={<Profile />} />
+                  </Routes>
+                </DriverLayout>
               </ProtectedRoute>
             }
           />
-          <Route path="driver/*" element={
-            <ProtectedRoute allowedRoles={['driver']}>
-              <Routes>
-                <Route path="profile" element={<DriverProfile />} />
-                <Route path="trips" element={<ManageTrips />} />
-              </Routes>
-            </ProtectedRoute>
-          } />
 
           {/* Routes admin */}
           <Route path="admin/*" element={
