@@ -1,40 +1,39 @@
 import api from '../../../services/api/axiosConfig';
-import { API_ENDPOINTS } from '../../../config/api';
 
 class DriverRideService {
   static async createRide(rideData) {
     try {
-      const response = await api.post(API_ENDPOINTS.RIDES.BASE, rideData);
+      const response = await api.post('/api/v1/rides', rideData);
       return response.data;
     } catch (error) {
-      throw error.message || 'Erreur lors de la création du trajet';
+      throw error.response?.data?.message || 'Erreur lors de la création du trajet';
     }
   }
 
   static async getMyRides() {
     try {
-      const response = await api.get(API_ENDPOINTS.USERS.TRIPS);
+      const response = await api.get('/api/v1/rides/my-rides');
       return response.data;
     } catch (error) {
-      throw error.message || 'Erreur lors de la récupération des trajets';
+      throw error.response?.data?.message || 'Erreur lors de la récupération des trajets';
     }
   }
 
   static async updateRide(rideId, updateData) {
     try {
-      const response = await api.put(`${API_ENDPOINTS.RIDES.BASE}/${rideId}`, updateData);
+      const response = await api.put(`/api/v1/rides/${rideId}`, updateData);
       return response.data;
     } catch (error) {
-      throw error.message || 'Erreur lors de la mise à jour du trajet';
+      throw error.response?.data?.message || 'Erreur lors de la mise à jour du trajet';
     }
   }
 
   static async deleteRide(rideId) {
     try {
-      const response = await api.delete(`${API_ENDPOINTS.RIDES.BASE}/${rideId}`);
+      const response = await api.delete(`/api/v1/rides/${rideId}`);
       return response.data;
     } catch (error) {
-      throw error.message || 'Erreur lors de la suppression du trajet';
+      throw error.response?.data?.message || 'Erreur lors de la suppression du trajet';
     }
   }
 }
