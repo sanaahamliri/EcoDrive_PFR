@@ -127,11 +127,17 @@ exports.deleteRide = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Non autorisé à supprimer ce trajet`, 401));
   }
 
-  if (ride.passengers.length > 0) {
+  if (ride.passengers && ride.passengers.length > 0) {
     return next(new ErrorResponse(`Impossible de supprimer un trajet avec des réservations existantes`, 400));
   }
 
-  await Ride.deleteOne({ _id: req.params.id });
+  await Promise.all([
+    Ride.findByIdAndDelete(req.params.id),
+    
+    User.findByIdAndUpdate(req.user.id, {
+      $inc: { 'stats.totalTrips': -1 }
+    })
+  ]);
 
   res.status(200).json({
     success: true,
