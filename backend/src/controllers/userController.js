@@ -16,6 +16,40 @@ exports.getProfile = asyncHandler(async (req, res) => {
   });
 });
 
+
+
+
+exports.getPassengerStats = asyncHandler(async (req, res) => {
+  const stats = await Ride.aggregate([
+    {
+      $match: {
+        'passengers.user': req.user._id,
+        status: 'completed'
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalTrips: { $sum: 1 },
+        totalDistance: { $sum: '$distance' },
+        averageRating: { $avg: '$passengers.rating' }
+      }
+    }
+  ]);
+
+  res.status(200).json({
+    success: true,
+    data: stats[0] || {
+      totalTrips: 0,
+      totalDistance: 0,
+      averageRating: 0
+    }
+  });
+});
+
+
+
+
 exports.updateProfile = asyncHandler(async (req, res) => {
   const fieldsToUpdate = {
     firstName: req.body.firstName,
