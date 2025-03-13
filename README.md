@@ -24,7 +24,7 @@ ecodrive/
 ## Installation
 1. Cloner le repository
 ```bash
-git clone [url-du-repo]
+git clone https://github.com/sanaahamliri/EcoDrive_PFR.git
 ```
 
 2. Installer les dépendances
