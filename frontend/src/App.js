@@ -15,7 +15,6 @@ import DriverDashboard from './features/driver/pages/Dashboard';
 import AdminDashboard from './features/admin/pages/Dashboard';
 
 import UserProfile from './features/user/pages/Profile';
-import SearchTrips from './features/user/pages/SearchTrips';
 import DriverProfile from './features/driver/pages/Profile';
 import ManageTrips from './features/driver/pages/Trips';
 import ManageUsers from './features/admin/pages/Users';
@@ -36,15 +35,15 @@ function App() {
         </Route>
 
         {/* Routes utilisateur avec MainLayout */}
-        <Route path="user" element={
-          <ProtectedRoute allowedRoles={['user']}>
-            <MainLayout />
-          </ProtectedRoute>
-        }>
-          <Route path="dashboard" element={<UserDashboard />} />
-          <Route path="profile" element={<UserProfile />} />
-          <Route path="search" element={<SearchTrips />} />
-        </Route>
+        <Route path="user/*" element={
+  <ProtectedRoute allowedRoles={['user']}>
+    <Routes>
+      <Route path="dashboard" element={<UserDashboard />} />
+      <Route path="profile" element={<UserProfile />} />
+    </Routes>
+  </ProtectedRoute>
+} />
+
 
         {/* Routes conducteur avec DriverLayout (sans MainLayout) */}
         <Route
