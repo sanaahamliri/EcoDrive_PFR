@@ -7,7 +7,9 @@ const {
   deleteRide,
   bookRide,
   cancelBooking,
-  getMyRides
+  getMyRides,
+  confirmBooking,
+  rejectBooking
 } = require('../controllers/rideController');
 
 const router = express.Router();
@@ -31,5 +33,13 @@ router
   .route('/:id/book')
   .post(protect, bookRide)
   .delete(protect, cancelBooking);
+
+router
+  .route('/:id/passengers/:passengerId/confirm')
+  .post(protect, confirmBooking);
+
+router
+  .route('/:id/passengers/:passengerId/reject')
+  .post(protect, rejectBooking);
 
 module.exports = router;

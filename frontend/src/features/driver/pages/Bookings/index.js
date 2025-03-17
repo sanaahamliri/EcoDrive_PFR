@@ -5,6 +5,7 @@ const Bookings = () => {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     fetchRides();
@@ -14,10 +15,61 @@ const Bookings = () => {
     try {
       setLoading(true);
       const response = await DriverRideService.getMyRides();
+      console.log('Rides data:', response.data);
+      console.log('First ride passengers:', response.data[0]?.passengers);
       setRides(response.data);
     } catch (err) {
       setError('Erreur lors du chargement des trajets');
-      console.error(err);
+      console.error('Error fetching rides:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirm = async (rideId, passengerId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+      
+      console.log('Confirming booking:', { rideId, passengerId });
+      if (!passengerId) {
+        throw new Error('ID du passager manquant');
+      }
+      await DriverRideService.confirmBooking(rideId, passengerId);
+      setSuccess('Réservation confirmée avec succès');
+      
+      await fetchRides();
+      
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error confirming booking:', err);
+      setError(err.response?.data?.error || err.message || 'Erreur lors de la confirmation de la réservation');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReject = async (rideId, passengerId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+      
+      console.log('Rejecting booking:', { rideId, passengerId });
+      await DriverRideService.rejectBooking(rideId, passengerId);
+      setSuccess('Réservation rejetée avec succès');
+      
+      await fetchRides();
+      
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error rejecting booking:', err);
+      setError(err.response?.data?.error || 'Erreur lors du rejet de la réservation');
     } finally {
       setLoading(false);
     }
@@ -42,15 +94,9 @@ const Bookings = () => {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Mes Trajets et Réservations</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Liste de tous vos trajets et leurs réservations
-          </p>
-        </div>
-      </div>
+    <div className="px-6 py-4">
+      <h1 className="text-2xl font-bold text-gray-900">Mes Trajets et Réservations</h1>
+      <p className="text-gray-600">Gérez vos trajets et les demandes de réservation</p>
 
       {error && (
         <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
@@ -58,81 +104,80 @@ const Bookings = () => {
         </div>
       )}
 
-      <div className="mt-8 flex flex-col">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Trajet</th>
-                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Date & Heure</th>
-                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Prix</th>
-                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Places</th>
-                    <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Réservations</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {rides.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="px-3 py-4 text-center text-sm text-gray-500">
-                        Aucun trajet trouvé
-                      </td>
-                    </tr>
-                  ) : (
-                    rides.map((ride) => (
-                      <tr key={ride._id}>
-                        <td className="whitespace-nowrap px-3 py-4">
-                          <div className="text-sm text-gray-900">
-                            {ride.departure.city} → {ride.destination.city}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {ride.departure.address} → {ride.destination.address}
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {formatDate(ride.departureTime)}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">
-                          {ride.price} DH
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {ride.availableSeats - (ride.passengers?.length || 0)}/{ride.availableSeats}
-                        </td>
-                        <td className="px-3 py-4">
-                          {ride.passengers && ride.passengers.length > 0 ? (
-                            <div className="space-y-2">
-                              {ride.passengers.map((passenger, index) => (
-                                <div key={index} className="flex items-center space-x-2">
-                                  <img
-                                    src={passenger.user.avatar || "https://via.placeholder.com/24"}
-                                    alt=""
-                                    className="h-6 w-6 rounded-full"
-                                  />
-                                  <span className="text-sm text-gray-900">
-                                    {passenger.user.firstName} {passenger.user.lastName}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    ({passenger.bookedSeats} place{passenger.bookedSeats > 1 ? 's' : ''})
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-500">Aucune réservation</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+      {success && (
+        <div className="mt-4 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded">
+          {success}
         </div>
+      )}
+
+      <div className="mt-6 space-y-6">
+        {rides.length === 0 ? (
+          <p className="text-center text-gray-500">Aucun trajet trouvé</p>
+        ) : (
+          rides.map((ride) => (
+            <div key={ride._id} className="bg-white shadow rounded-lg p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">{ride.departure.city} → {ride.destination.city}</h2>
+                  <p className="text-sm text-gray-500">{formatDate(ride.departureTime)}</p>
+                  <p className="text-sm text-gray-700 font-medium">{ride.price} DH</p>
+                </div>
+                <p className="text-sm text-gray-600">Places restantes : {ride.availableSeats - (ride.passengers?.length || 0)}/{ride.availableSeats}</p>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {ride.passengers && ride.passengers.length > 0 ? (
+                  ride.passengers.map((passenger) => {
+                    console.log('Passenger data:', passenger);
+                    return (
+                      <div key={passenger._id || passenger.user?._id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <img
+                            src={passenger.user?.avatar || "https://via.placeholder.com/24"}
+                            alt=""
+                            className="h-8 w-8 rounded-full"
+                          />
+                          <span className="text-sm text-gray-900 font-medium">
+                            {passenger.user?.firstName} {passenger.user?.lastName} ({passenger.bookedSeats} place{passenger.bookedSeats > 1 ? 's' : ''})
+                          </span>
+                        </div>
+                        {passenger.status === 'pending' && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleConfirm(ride._id, passenger.user._id)}
+                              className="bg-green-500 text-white px-3 py-1 rounded-lg flex items-center hover:bg-green-600 transition"
+                              disabled={loading}
+                            >
+                              ✓ Confirmer
+                            </button>
+                            <button
+                              onClick={() => handleReject(ride._id, passenger.user._id)}
+                              className="bg-red-500 text-white px-3 py-1 rounded-lg flex items-center hover:bg-red-600 transition"
+                              disabled={loading}
+                            >
+                              ✕ Refuser
+                            </button>
+                          </div>
+                        )}
+                        {passenger.status === 'accepted' && (
+                          <span className="text-sm text-green-600 font-medium">✓ Confirmé</span>
+                        )}
+                        {passenger.status === 'rejected' && (
+                          <span className="text-sm text-red-600 font-medium">✕ Refusé</span>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-gray-500">Aucune réservation</p>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 };
 
-export default Bookings; 
+export default Bookings;

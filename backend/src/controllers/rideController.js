@@ -62,7 +62,9 @@ exports.getRides = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    count: rides.length,
+    count: total,
+    totalPages: Math.ceil(total / limit),
+    currentPage: page,
     pagination,
     data: rides
   });
@@ -214,11 +216,84 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
 // @desc    Obtenir les trajets du conducteur connecté
 exports.getMyRides = asyncHandler(async (req, res) => {
   const rides = await Ride.find({ driver: req.user.id })
+    .populate('passengers.user', 'firstName lastName avatar')
     .sort({ departureTime: -1 });
 
   res.status(200).json({
     success: true,
     count: rides.length,
     data: rides
+  });
+});
+
+// @desc    Confirmer une réservation
+exports.confirmBooking = asyncHandler(async (req, res, next) => {
+  const ride = await Ride.findById(req.params.id);
+
+  if (!ride) {
+    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+  }
+
+  if (ride.driver.toString() !== req.user.id) {
+    return next(new ErrorResponse(`Non autorisé à confirmer cette réservation`, 401));
+  }
+
+  const passenger = ride.passengers.find(p => p.user.toString() === req.params.passengerId);
+  
+  if (!passenger) {
+    return next(new ErrorResponse(`Passager non trouvé`, 404));
+  }
+
+  if (passenger.status !== 'pending') {
+    return next(new ErrorResponse(`Cette réservation a déjà été traitée`, 400));
+  }
+
+
+  const totalBookedSeats = ride.passengers.reduce((total, p) => {
+    if (p.status === 'accepted') return total + p.bookedSeats;
+    return total;
+  }, 0);
+
+  if (totalBookedSeats + passenger.bookedSeats > ride.availableSeats) {
+    return next(new ErrorResponse(`Il n'y a plus assez de places disponibles`, 400));
+  }
+
+  passenger.status = 'accepted';
+  await ride.save();
+
+  res.status(200).json({
+    success: true,
+    data: ride
+  });
+});
+
+// @desc    Rejeter une réservation
+exports.rejectBooking = asyncHandler(async (req, res, next) => {
+  const ride = await Ride.findById(req.params.id);
+
+  if (!ride) {
+    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+  }
+
+  if (ride.driver.toString() !== req.user.id) {
+    return next(new ErrorResponse(`Non autorisé à rejeter cette réservation`, 401));
+  }
+
+  const passenger = ride.passengers.find(p => p.user.toString() === req.params.passengerId);
+  
+  if (!passenger) {
+    return next(new ErrorResponse(`Passager non trouvé`, 404));
+  }
+
+  if (passenger.status !== 'pending') {
+    return next(new ErrorResponse(`Cette réservation a déjà été traitée`, 400));
+  }
+
+  passenger.status = 'rejected';
+  await ride.save();
+
+  res.status(200).json({
+    success: true,
+    data: ride
   });
 });

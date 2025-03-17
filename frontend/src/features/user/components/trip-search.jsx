@@ -12,6 +12,13 @@ class TripSearch extends React.Component {
       trips: [],
       loading: false,
       error: null,
+      success: null,
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false
+      },
       filters: {
         from: "",
         to: "",
@@ -32,36 +39,60 @@ class TripSearch extends React.Component {
   fetchTrips = async (filters = null) => {
     try {
       this.setState({ loading: true, error: null })
-
+      const { currentPage } = this.state.pagination
+      
       console.log("Fetching trips with filters:", filters || {})
-      const tripsData = await rideService.searchRides(filters || {})
-      console.log("Received trips:", tripsData)
+      const response = await rideService.searchRides(filters || {}, currentPage)
+      console.log("Received trips:", response)
 
       this.setState({
-        trips: tripsData || [],
+        trips: response.data || [],
         loading: false,
+        pagination: {
+          currentPage: response.currentPage,
+          totalPages: response.totalPages,
+          hasNext: response.pagination?.next !== undefined,
+          hasPrev: response.pagination?.prev !== undefined
+        }
       })
 
-      console.log("Trip data structure:", JSON.stringify(tripsData?.[0], null, 2))
+      console.log("Trip data structure:", JSON.stringify(response.data?.[0], null, 2))
     } catch (error) {
       console.error("Error fetching trips:", error)
       this.setState({
         trips: [],
         error: "Impossible de charger les trajets. Veuillez réessayer plus tard.",
-        loading: false,
+        loading: false
       })
     }
   }
 
   handleBooking = async (rideId, seats = 1) => {
     try {
+      this.setState({ loading: true, error: null, success: null })
       await rideService.bookRide(rideId, seats)
-      // Rafraîchir les trajets après la réservation
+      
+      this.setState({
+        success: "Votre demande de réservation a été envoyée au conducteur. Vous serez notifié dès qu\'il aura confirmé votre réservation.",
+        loading: false
+      })
+      
+      setTimeout(() => {
+        this.setState({ success: null })
+      }, 5000)
+      
       this.fetchTrips(this.getCleanFilters())
     } catch (error) {
       this.setState({
         error: typeof error === "string" ? error : "Erreur lors de la réservation",
+        loading: false,
+        success: null
       })
+
+      if (error.includes("connecter")) {
+        localStorage.setItem('redirectAfterLogin', window.location.pathname)
+        window.location.href = '/login'
+      }
     }
   }
   getCleanFilters = () => {
@@ -150,14 +181,34 @@ class TripSearch extends React.Component {
     this.setState((prevState) => ({ showFilters: !prevState.showFilters }))
   }
 
+  handlePageChange = (newPage) => {
+    this.setState(
+      prevState => ({
+        pagination: {
+          ...prevState.pagination,
+          currentPage: newPage
+        }
+      }),
+      () => this.fetchTrips(this.getCleanFilters())
+    )
+  }
+
   renderFilterPanel() {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-all duration-300">
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-all duration-300"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            this.toggleFilters();
+          }
+        }}
+      >
         <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl transition-all duration-300 animate-fadeIn">
           <div className="absolute -top-3 -right-3">
             <button
               onClick={this.toggleFilters}
-              className="bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-300 text-gray-500 hover:text-gray-700 transform hover:scale-105"
+              className="bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-all duration-300 text-gray-500 hover:text-gray-700 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500"
+              aria-label="Fermer les filtres"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -383,7 +434,7 @@ class TripSearch extends React.Component {
                   {
                     id: "musique",
                     label: "Musique",
-                    icon: "M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3",
+                    icon: "M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3",
                   },
                   {
                     id: "animaux",
@@ -524,21 +575,23 @@ class TripSearch extends React.Component {
               )}
             </div>
 
-            <button
-              onClick={this.toggleFilters}
-              className="mt-6 w-full rounded-lg bg-gradient-to-r from-green-600 to-green-500 px-4 py-3.5 text-white font-medium hover:from-green-700 hover:to-green-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center transform hover:-translate-y-0.5"
-            >
-              <span>Appliquer les filtres</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 ml-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <div className="flex space-x-4">
+              <button
+                onClick={this.toggleFilters}
+                className="mt-6 w-full rounded-lg bg-gradient-to-r from-green-600 to-green-500 px-4 py-3.5 text-white font-medium hover:from-green-700 hover:to-green-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center transform hover:-translate-y-0.5"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+                <span>Appliquer les filtres</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 ml-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1016,6 +1069,28 @@ class TripSearch extends React.Component {
             </div>
           )}
 
+          {this.state.success && (
+            <div className="rounded-lg bg-green-50 p-4 border border-green-200">
+              <div className="flex">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-green-400 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <div className="text-sm text-green-700">{this.state.success}</div>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <svg
@@ -1099,15 +1174,14 @@ class TripSearch extends React.Component {
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                               />
                             </svg>
-                            {new Date(trip.departureTime).toLocaleDateString("fr-FR", {
+                            {new Date(trip.departureTime).toLocaleString("fr-FR", {
                               weekday: "long",
                               day: "numeric",
                               month: "long",
-                            })}{" "}
-                            à{" "}
-                            {new Date(trip.departureTime).toLocaleTimeString("fr-FR", {
+                              year: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
+                              timeZone: "Africa/Casablanca"
                             })}
                           </div>
                         </div>
@@ -1169,7 +1243,7 @@ class TripSearch extends React.Component {
                             viewBox="0 0 20 20"
                             fill="currentColor"
                           >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                           </svg>
                           <span>{trip.driver?.stats?.rating || "0"}</span>
                         </div>
@@ -1213,6 +1287,36 @@ class TripSearch extends React.Component {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {!loading && safeTrips.length > 0 && (
+            <div className="flex items-center justify-center space-x-4 mt-6">
+              <button
+                onClick={() => this.handlePageChange(this.state.pagination.currentPage - 1)}
+                disabled={!this.state.pagination.hasPrev}
+                className={`px-4 py-2 rounded-lg border ${
+                  this.state.pagination.hasPrev
+                    ? "border-green-600 text-green-600 hover:bg-green-50"
+                    : "border-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Précédent
+              </button>
+              <span className="text-sm text-gray-600">
+                Page {this.state.pagination.currentPage} sur {this.state.pagination.totalPages}
+              </span>
+              <button
+                onClick={() => this.handlePageChange(this.state.pagination.currentPage + 1)}
+                disabled={!this.state.pagination.hasNext}
+                className={`px-4 py-2 rounded-lg border ${
+                  this.state.pagination.hasNext
+                    ? "border-green-600 text-green-600 hover:bg-green-50"
+                    : "border-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Suivant
+              </button>
             </div>
           )}
         </div>

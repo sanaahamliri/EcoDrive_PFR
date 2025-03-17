@@ -36,6 +36,20 @@ const api = axios.create({
   withCredentials: true
 });
 
+// Ajouter un intercepteur pour inclure le token dans toutes les requêtes
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+);
+
 // Ajouter des intercepteurs pour le débogage
 api.interceptors.request.use(
   config => {
@@ -58,5 +72,16 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Fonction utilitaire pour vérifier si le token est expiré
+const isTokenExpired = (token) => {
+  if (!token) return true
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp < Date.now() / 1000
+  } catch (e) {
+    return true
+  }
+}
 
 export default api; 

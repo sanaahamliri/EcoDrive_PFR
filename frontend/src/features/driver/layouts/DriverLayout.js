@@ -1,23 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  HomeIcon, 
-  CalendarIcon, 
-  UserGroupIcon, 
-  ChartBarIcon,
-  Cog6ToothIcon,
-  BellIcon,
-  Bars3Icon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
 import AuthService from '../../../services/authService';
 
 const navigation = [
-  { name: 'Tableau de bord', href: '/driver/dashboard', icon: HomeIcon },
-  { name: 'Mes trajets', href: '/driver/trips', icon: CalendarIcon },
-  { name: 'Réservations', href: '/driver/bookings', icon: UserGroupIcon },
-  { name: 'Statistiques', href: '/driver/stats', icon: ChartBarIcon },
-  { name: 'Paramètres', href: '/driver/settings', icon: Cog6ToothIcon },
+  { name: 'Tableau de bord', href: '/driver/dashboard', icon: '🏠' },
+  { name: 'Mes trajets', href: '/driver/trips', icon: '📅' },
+  { name: 'Réservations', href: '/driver/bookings', icon: '👥' },
+  { name: 'Statistiques', href: '/driver/stats', icon: '📊' },
+  { name: 'Paramètres', href: '/driver/settings', icon: '🛠' },
 ];
 
 const DriverLayout = ({ children }) => {
@@ -62,7 +52,7 @@ const DriverLayout = ({ children }) => {
               className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
               onClick={() => setSidebarOpen(false)}
             >
-              <XMarkIcon className="h-6 w-6 text-white" />
+              {/* Replace with the appropriate icon for closing the sidebar */}
             </button>
           </div>
           {/* Contenu Sidebar Mobile */}
@@ -81,11 +71,7 @@ const DriverLayout = ({ children }) => {
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   } group flex items-center px-2 py-2 text-base font-medium rounded-md`}
                 >
-                  <item.icon
-                    className={`${
-                      location.pathname === item.href ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
-                    } mr-4 flex-shrink-0 h-6 w-6`}
-                  />
+                  {/* Replace with the appropriate icon for the item */}
                   {item.name}
                 </Link>
               ))}
@@ -112,11 +98,7 @@ const DriverLayout = ({ children }) => {
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
                 >
-                  <item.icon
-                    className={`${
-                      location.pathname === item.href ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
-                    } mr-3 flex-shrink-0 h-6 w-6`}
-                  />
+                  {/* Replace with the appropriate icon for the item */}
                   {item.name}
                 </Link>
               ))}
@@ -136,13 +118,13 @@ const DriverLayout = ({ children }) => {
                 className="lg:hidden px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
                 onClick={() => setSidebarOpen(true)}
               >
-                <Bars3Icon className="h-6 w-6" />
+                {/* Replace with the appropriate icon for opening the sidebar */}
               </button>
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-4">
               {/* Notifications */}
               <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none">
-                <BellIcon className="h-6 w-6" />
+                {/* Replace with the appropriate icon for notifications */}
               </button>
 
               {/* Profile dropdown */}

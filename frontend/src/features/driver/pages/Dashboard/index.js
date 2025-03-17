@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  CurrencyDollarIcon,
-  UserGroupIcon,
-  MapPinIcon,
-  CalendarIcon
-} from '@heroicons/react/24/outline';
+import DriverRideService from '../../services/rideService';
 import CreateTripForm from '../../components/TripManagement/CreateTripForm';
 import TripList from '../../components/TripManagement/TripList';
-import DriverRideService from '../../services/rideService';
 import EditTripForm from '../../components/TripManagement/EditTripForm';
 
-const StatCard = ({ title, value, icon: Icon, description }) => (
+const StatCard = ({ title, value, icon, description }) => (
   <div className="bg-white p-6 rounded-lg shadow">
     <div className="flex items-center">
       <div className="p-3 rounded-full bg-green-100">
-        <Icon className="h-6 w-6 text-green-600" />
+        <span className="text-2xl">{icon}</span>
       </div>
       <div className="ml-4">
         <h3 className="text-lg font-medium text-gray-900">{title}</h3>
@@ -52,7 +46,7 @@ const DriverDashboard = () => {
       const response = await DriverRideService.getMyRides();
       setTrips(response.data || []);
       
-      // Calculer les statistiques
+      // Calcule des statistiques
       const now = new Date();
       const upcomingTrips = response.data.filter(trip => new Date(trip.departureTime) > now);
       const revenue = response.data.reduce((total, trip) => {
@@ -117,7 +111,7 @@ const DriverDashboard = () => {
           onClick={() => setShowCreateForm(true)}
           className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center"
         >
-          <CalendarIcon className="h-5 w-5 mr-2" />
+          <span className="text-xl mr-2">📅</span>
           Proposer un trajet
         </button>
       </div>
@@ -139,22 +133,22 @@ const DriverDashboard = () => {
         <StatCard
           title="Trajets proposés"
           value={stats.totalTrips}
-          icon={MapPinIcon}
+          icon="📍"
         />
         <StatCard
           title="Trajets à venir"
           value={stats.upcomingTrips}
-          icon={CalendarIcon}
+          icon="📅"
         />
         <StatCard
           title="Passagers"
           value={stats.totalPassengers}
-          icon={UserGroupIcon}
+          icon="👥"
         />
         <StatCard
           title="Revenus"
           value={`${stats.totalRevenue} DH`}
-          icon={CurrencyDollarIcon}
+          icon="💰"
         />
       </div>
 

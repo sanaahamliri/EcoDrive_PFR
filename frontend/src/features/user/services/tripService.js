@@ -2,9 +2,13 @@ import api from "../../../config/api"
 import { ENDPOINTS } from "../../../constants/endpoints"
 
 class TripService {
-  async searchRides(filters = {}) {
+  async searchRides(filters = {}, page = 1) {
     try {
       const params = new URLSearchParams()
+      
+      // Ajout des paramètres de pagination
+      params.append("page", page)
+      params.append("limit", 10) // Nombre de résultats par page
 
       // Nettoyage et validation des filtres avant envoi
       if (filters.from?.trim()) {
@@ -74,10 +78,20 @@ class TripService {
             features: this.getFeatures(ride.preferences),
           }
         })
-        return rides
+        return {
+          data: rides,
+          currentPage: page,
+          totalPages: Math.ceil(response.data.count / 10),
+          pagination: response.data.pagination
+        }
       }
 
-      return []
+      return {
+        data: [],
+        currentPage: 1,
+        totalPages: 1,
+        pagination: {}
+      }
     } catch (error) {
       console.error("Search rides error:", error)
       throw this.handleError(error)
@@ -96,9 +110,19 @@ class TripService {
 
   async bookRide(rideId, seats = 1) {
     try {
+      // Vérifier que l'utilisateur est connecté
+      const token = localStorage.getItem('token') // ou votre méthode de stockage du token
+      if (!token) {
+        throw new Error('Veuillez vous connecter pour réserver un trajet')
+      }
+
       const response = await api.post(ENDPOINTS.RIDES.BOOK(rideId), {
         seats,
         status: "pending",
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}` // Ajouter explicitement le token
+        }
       })
       return response.data
     } catch (error) {
@@ -116,10 +140,13 @@ class TripService {
   }
 
   handleError(error) {
+    if (error.response?.status === 401) {
+      return "Veuillez vous reconnecter pour réserver ce trajet"
+    }
     if (error.response?.data?.error) {
       return error.response.data.error
     }
-    return "Une erreur est survenue"
+    return error.message || "Une erreur est survenue lors de la réservation"
   }
 }
 
