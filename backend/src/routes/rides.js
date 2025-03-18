@@ -9,23 +9,25 @@ const {
   cancelBooking,
   getMyRides,
   confirmBooking,
-  rejectBooking
+  rejectBooking,
+  getMyBookings
 } = require('../controllers/rideController');
 
 const router = express.Router();
-
 const { protect } = require('../middlewares/auth');
 
+// Public routes
+router.get('/', getRides);
+
+// Protected routes - specific routes first
 router.get('/my-rides', protect, getMyRides);
+router.get('/my-bookings', protect, getMyBookings);
+router.post('/', protect, createRide);
 
-router
-  .route('/')
-  .get(getRides)
-  .post(protect, createRide);
-
+// Parameterized routes
+router.get('/:id', getRide);
 router
   .route('/:id')
-  .get(getRide)
   .put(protect, updateRide)
   .delete(protect, deleteRide);
 

@@ -1,5 +1,8 @@
 import api from "../../../config/api"
 import { ENDPOINTS } from "../../../constants/endpoints"
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
 class TripService {
   async searchRides(filters = {}, page = 1) {
@@ -131,12 +134,30 @@ class TripService {
   }
 
   async cancelBooking(rideId) {
-    try {
-      const response = await api.delete(ENDPOINTS.RIDES.CANCEL(rideId))
-      return response.data
-    } catch (error) {
-      throw this.handleError(error)
-    }
+    const response = await axios.delete(`${API_URL}/rides/${rideId}/book`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  }
+
+  async getMyTrips() {
+    const response = await axios.get(`${API_URL}/rides/my-bookings`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
+  }
+
+  async getTripDetails(rideId) {
+    const response = await axios.get(`${API_URL}/rides/${rideId}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    return response.data;
   }
 
   handleError(error) {

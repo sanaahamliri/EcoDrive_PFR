@@ -197,10 +197,18 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Réservation non trouvée`, 404));
   }
 
-  const cancelDeadline = new Date(ride.departureTime);
-  cancelDeadline.setHours(cancelDeadline.getHours() - 24);
+  const passenger = ride.passengers[bookingIndex];
   
-  if (Date.now() > cancelDeadline) {
+  if (passenger.status !== 'pending') {
+    return next(new ErrorResponse(`Impossible d'annuler une réservation déjà confirmée`, 400));
+  }
+
+  // Vérifier si le trajet est à moins de 24h du départ
+  const departureTime = new Date(ride.departureTime);
+  const now = new Date();
+  const hoursUntilDeparture = (departureTime - now) / (1000 * 60 * 60);
+
+  if (hoursUntilDeparture < 24) {
     return next(new ErrorResponse(`Impossible d'annuler moins de 24h avant le départ`, 400));
   }
 
@@ -295,5 +303,30 @@ exports.rejectBooking = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: ride
+  });
+});
+
+// @desc    Obtenir les réservations de l'utilisateur connecté
+exports.getMyBookings = asyncHandler(async (req, res) => {
+  const rides = await Ride.find({
+    'passengers.user': req.user.id
+  })
+  .populate('driver', 'firstName lastName avatar stats.rating')
+  .populate('passengers.user', 'firstName lastName avatar')
+  .sort({ departureTime: -1 });
+
+  const userRides = rides.map(ride => {
+    const userBooking = ride.passengers.find(p => p.user._id.toString() === req.user.id);
+    return {
+      ...ride.toObject(),
+      status: userBooking.status,
+      bookedSeats: userBooking.bookedSeats
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    count: userRides.length,
+    data: userRides
   });
 });
