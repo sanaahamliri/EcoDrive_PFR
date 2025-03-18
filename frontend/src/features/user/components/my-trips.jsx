@@ -12,13 +12,26 @@ const MyTrips = () => {
 
   useEffect(() => {
     fetchTrips();
-  }, []);
+  }, [activeTab]);
 
   const fetchTrips = async () => {
     try {
       setLoading(true);
       const response = await UserTripService.getMyTrips();
-      setTrips(response.data);
+      // Filtrer les trajets en fonction de l'onglet actif
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      const filteredTrips = response.data.filter(trip => {
+        const departureTime = new Date(trip.departureTime);
+        const departureDate = new Date(departureTime.getFullYear(), departureTime.getMonth(), departureTime.getDate());
+        
+        return activeTab === "upcoming" 
+          ? departureDate >= today 
+          : departureDate < today;
+      });
+      
+      setTrips(filteredTrips);
     } catch (err) {
       setError('Erreur lors du chargement des trajets');
       console.error('Error fetching trips:', err);
@@ -300,16 +313,108 @@ const MyTrips = () => {
           )}
 
           {activeTab === "past" && (
-            <div className="rounded-lg bg-white shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold">Trajets passés</h2>
-                <p className="text-sm text-gray-500">Historique de vos trajets précédents</p>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-gray-500">
-                  Consultez l'historique complet de vos trajets dans la section "Historique".
-                </p>
-              </div>
+            <div className="space-y-4">
+              {trips.length === 0 ? (
+                <p className="text-center text-gray-500">Aucun trajet passé</p>
+              ) : (
+                trips.map((trip) => (
+                  <div key={trip._id} className="rounded-lg bg-white shadow overflow-hidden">
+                    <div className="relative p-6 border-b">
+                      <span className="absolute right-6 top-6 inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Terminé
+                      </span>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center text-lg font-semibold">
+                          {trip.departure.city}
+                          <svg xmlns="http://www.w3.org/2000/svg" className="mx-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                          {trip.destination.city}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {formatDate(trip.departureTime)}
+                        </div>
+                        <div className="text-xl font-bold text-green-600 mt-2">{trip.price} DH</div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-6 grid gap-6 md:grid-cols-2">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-500 mb-2">Conducteur</h3>
+                          <div className="flex items-center space-x-3">
+                            <div className="h-10 w-10 rounded-full overflow-hidden">
+                              <img 
+                                src={trip.driver?.avatar || "/placeholder.svg"} 
+                                alt={`${trip.driver?.firstName} ${trip.driver?.lastName}`} 
+                                className="h-full w-full object-cover" 
+                              />
+                            </div>
+                            <div>
+                              <div className="font-medium">
+                                {trip.driver?.firstName} {trip.driver?.lastName}
+                              </div>
+                              <div className="flex items-center text-sm text-gray-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-3 w-3 fill-green-600 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                <span>{trip.driver?.stats?.rating || 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-500 mb-2">Véhicule</h3>
+                          <div className="space-y-1">
+                            <div className="text-sm">
+                              <span className="font-medium">Modèle:</span> {trip.vehicle?.model || 'Non spécifié'}
+                            </div>
+                            <div className="text-sm">
+                              <span className="font-medium">Couleur:</span> {trip.vehicle?.color || 'Non spécifié'}
+                            </div>
+                            <div className="text-sm">
+                              <span className="font-medium">Immatriculation:</span> {trip.vehicle?.plate || 'Non spécifié'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-500 mb-2">Point de rendez-vous</h3>
+                          <div className="flex items-start space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <div>
+                              <div className="font-medium">Gare routière de {trip.departure.city}</div>
+                              <div className="text-sm text-gray-500">{trip.departure.address || 'Adresse non spécifiée'}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col space-y-2 mt-auto">
+                          <button 
+                            onClick={() => handleContactDriver(trip.driver)}
+                            className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            Contacter le conducteur
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>
