@@ -1,5 +1,6 @@
 import React from "react"
 import TripService from "../services/tripService"
+import ContactModal from "./ContactModal"
 
 class TripHistory extends React.Component {
   constructor(props) {
@@ -8,6 +9,7 @@ class TripHistory extends React.Component {
       trips: [],
       loading: true,
       error: null,
+      selectedDriver: null,
       filters: {
         period: 'all',
         destination: 'all',
@@ -148,8 +150,16 @@ class TripHistory extends React.Component {
     document.body.removeChild(link)
   }
 
+  handleShowContact = (driver) => {
+    this.setState({ selectedDriver: driver })
+  }
+
+  handleCloseContact = () => {
+    this.setState({ selectedDriver: null })
+  }
+
   render() {
-    const { trips, loading, error, filters, searchInput } = this.state
+    const { trips, loading, error, filters, searchInput, selectedDriver } = this.state
 
     if (loading) {
       return (
@@ -357,7 +367,10 @@ class TripHistory extends React.Component {
                         </div>
                       </td>
                       <td className="px-4 py-4 text-right">
-                        <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 mr-2">
+                        <button 
+                          onClick={() => this.handleShowContact(trip.driver)}
+                          className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 mr-2"
+                        >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             className="mr-1 h-4 w-4"
@@ -369,7 +382,7 @@ class TripHistory extends React.Component {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth={2}
-                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                              d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                             />
                           </svg>
                           <span className="sr-only">Contacter</span>
@@ -385,6 +398,14 @@ class TripHistory extends React.Component {
             )}
           </div>
         </div>
+
+        {/* Contact Modal */}
+        {selectedDriver && (
+          <ContactModal
+            driver={selectedDriver}
+            onClose={this.handleCloseContact}
+          />
+        )}
       </div>
     )
   }
