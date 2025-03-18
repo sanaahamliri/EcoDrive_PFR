@@ -107,6 +107,47 @@ class TripHistory extends React.Component {
     this.handleFilterChange('search', this.state.searchInput)
   }
 
+  exportToCSV = () => {
+    const { trips } = this.state
+    
+    const headers = [
+      'Date',
+      'Heure',
+      'Départ',
+      'Destination',
+      'Conducteur',
+      'Prix',
+      'Note'
+    ]
+
+    const rows = trips.map(trip => [
+      new Date(trip.departureTime).toLocaleDateString('fr-FR'),
+      new Date(trip.departureTime).toLocaleTimeString('fr-FR'),
+      trip.departure.city,
+      trip.destination.city,
+      `${trip.driver.firstName} ${trip.driver.lastName}`,
+      `${trip.price} DH`,
+      trip.userRating || 'Non noté'
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    
+    link.setAttribute('href', url)
+    link.setAttribute('download', `historique_trajets_${new Date().toLocaleDateString('fr-FR')}.csv`)
+    link.style.visibility = 'hidden'
+    
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   render() {
     const { trips, loading, error, filters, searchInput } = this.state
 
@@ -130,7 +171,11 @@ class TripHistory extends React.Component {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Historique des trajets</h1>
-          <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+          <button 
+            onClick={this.exportToCSV}
+            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            disabled={trips.length === 0}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="mr-2 h-4 w-4"
