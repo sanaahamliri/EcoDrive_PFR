@@ -2,7 +2,6 @@
 
 import React from "react"
 import rideService from "../services/tripService"
-import TripDetails from "./TripDetails"
 
 class TripSearch extends React.Component {
   constructor(props) {
@@ -14,7 +13,6 @@ class TripSearch extends React.Component {
       loading: false,
       error: null,
       success: null,
-      selectedTrip: null,
       pagination: {
         currentPage: 1,
         totalPages: 1,
@@ -193,14 +191,6 @@ class TripSearch extends React.Component {
       }),
       () => this.fetchTrips(this.getCleanFilters())
     )
-  }
-
-  handleShowDetails = (trip) => {
-    this.setState({ selectedTrip: trip })
-  }
-
-  handleCloseDetails = () => {
-    this.setState({ selectedTrip: null })
   }
 
   renderFilterPanel() {
@@ -609,7 +599,7 @@ class TripSearch extends React.Component {
   }
 
   render() {
-    const { trips, loading, error, selectedTrip } = this.state
+    const { trips, loading, error } = this.state
 
     const safeTrips = Array.isArray(trips) ? trips : []
 
@@ -1261,10 +1251,7 @@ class TripSearch extends React.Component {
                     </div>
 
                     <div className="flex space-x-3 mt-4 md:mt-0">
-                      <button 
-                        onClick={() => this.handleShowDetails(trip)}
-                        className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
-                      >
+                      <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-4 w-4 mr-2 text-gray-500"
@@ -1333,18 +1320,9 @@ class TripSearch extends React.Component {
             </div>
           )}
         </div>
-
-        {/* Trip Details Modal */}
-        {selectedTrip && (
-          <TripDetails
-            trip={selectedTrip}
-            onClose={this.handleCloseDetails}
-          />
-        )}
       </div>
     )
   }
 }
 
 export default TripSearch
-

@@ -2,6 +2,7 @@ const Ride = require('../models/Ride');
 const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middlewares/async');
+const Review = require('../models/Review');
 
 // @desc    Créer un nouveau trajet
 exports.createRide = asyncHandler(async (req, res) => {
@@ -98,8 +99,30 @@ exports.updateRide = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Non autorisé à modifier ce trajet`, 401));
   }
 
-  if (ride.passengers.length > 0 && (req.body.availableSeats || req.body.departureTime)) {
-    return next(new ErrorResponse(`Impossible de modifier les places ou l'heure de départ avec des réservations existantes`, 400));
+  // Restriction de la modification
+  if (ride.passengers.length > 0) {
+    if (req.body.availableSeats) {
+      const totalBookedSeats = ride.passengers.reduce((total, passenger) => {
+        if (passenger.status === 'accepted') {
+          return total + passenger.bookedSeats;
+        }
+        return total;
+      }, 0);
+
+      if (req.body.availableSeats < totalBookedSeats) {
+        return next(new ErrorResponse(`Impossible de réduire le nombre de places en dessous de ${totalBookedSeats} (places déjà réservées)`, 400));
+      }
+    }
+
+    if (req.body.departureTime) {
+      const newDepartureTime = new Date(req.body.departureTime);
+      const now = new Date();
+      const hoursUntilDeparture = (newDepartureTime - now) / (1000 * 60 * 60);
+
+      if (hoursUntilDeparture < 24) {
+        return next(new ErrorResponse(`Impossible de modifier l'heure de départ à moins de 24h du départ`, 400));
+      }
+    }
   }
 
   ride = await Ride.findByIdAndUpdate(req.params.id, req.body, {
@@ -328,5 +351,54 @@ exports.getMyBookings = asyncHandler(async (req, res) => {
     success: true,
     count: userRides.length,
     data: userRides
+  });
+});
+
+// @desc    Noter un trajet
+exports.rateTrip = asyncHandler(async (req, res, next) => {
+  const ride = await Ride.findById(req.params.id);
+
+  if (!ride) {
+    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+  }
+
+  // Vérifier que l'utilisateur était passager
+  const wasPassenger = ride.passengers.some(p => p.user.toString() === req.user.id);
+  if (!wasPassenger) {
+    return next(new ErrorResponse('Vous devez avoir été passager pour noter ce trajet', 403));
+  }
+
+  // Vérifier si l'utilisateur a déjà noté ce trajet
+  const existingReview = await Review.findOne({
+    ride: ride._id,
+    reviewer: req.user.id
+  });
+
+  if (existingReview) {
+    return next(new ErrorResponse('Vous avez déjà noté ce trajet', 400));
+  }
+
+  // Créer la review
+  const review = await Review.create({
+    rating: req.body.rating,
+    comment: req.body.comment,
+    ride: ride._id,
+    reviewer: req.user.id,
+    reviewedUser: ride.driver,
+    type: 'passenger'
+  });
+
+  // Mettre à jour la note moyenne du conducteur
+  const reviews = await Review.find({ reviewedUser: ride.driver });
+  const avgRating = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+
+  await User.findByIdAndUpdate(ride.driver, {
+    'stats.rating': avgRating.toFixed(1),
+    'stats.reviewCount': reviews.length
+  });
+
+  res.status(201).json({
+    success: true,
+    data: review
   });
 });

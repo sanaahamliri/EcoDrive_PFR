@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import DriverRideService from '../../services/rideService';
 import CreateTripForm from '../../components/TripManagement/CreateTripForm';
 import TripList from '../../components/TripManagement/TripList';
@@ -104,6 +106,19 @@ const DriverDashboard = () => {
 
   return (
     <div className="p-6">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      
       {/* En-tête */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-semibold text-gray-900">Tableau de bord</h1>

@@ -9,11 +9,9 @@ class TripService {
     try {
       const params = new URLSearchParams()
       
-      // Ajout des paramètres de pagination
       params.append("page", page)
-      params.append("limit", 10) // Nombre de résultats par page
+      params.append("limit", 5) 
 
-      // Nettoyage et validation des filtres avant envoi
       if (filters.from?.trim()) {
         params.append("from", filters.from.trim())
       }
@@ -32,7 +30,6 @@ class TripService {
 
       // Préférences
       if (filters.preferences?.length > 0) {
-        // Convertir les préférences en format attendu par l'API
         const preferencesMap = {
           "non-fumeur": "smoking",
           musique: "music",
@@ -74,7 +71,6 @@ class TripService {
       const response = await api.get(`${ENDPOINTS.RIDES.SEARCH}?${params}`)
 
       if (response.data && response.data.success) {
-        // Traitement des données pour ajouter les features
         const rides = response.data.data.map((ride) => {
           return {
             ...ride,
@@ -113,8 +109,7 @@ class TripService {
 
   async bookRide(rideId, seats = 1) {
     try {
-      // Vérifier que l'utilisateur est connecté
-      const token = localStorage.getItem('token') // ou votre méthode de stockage du token
+      const token = localStorage.getItem('token')
       if (!token) {
         throw new Error('Veuillez vous connecter pour réserver un trajet')
       }
@@ -124,7 +119,7 @@ class TripService {
         status: "pending",
       }, {
         headers: {
-          'Authorization': `Bearer ${token}` // Ajouter explicitement le token
+          'Authorization': `Bearer ${token}`
         }
       })
       return response.data
@@ -158,6 +153,26 @@ class TripService {
       }
     });
     return response.data;
+  }
+
+  async rateTrip(tripId, rating, comment) {
+    try {
+      const response = await axios.post(
+        `${API_URL}/rides/${tripId}/rate`,
+        {
+          rating,
+          comment
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   handleError(error) {

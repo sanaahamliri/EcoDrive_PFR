@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 
 const EditTripForm = ({ trip, onUpdate, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -65,15 +66,46 @@ const EditTripForm = ({ trip, onUpdate, onCancel }) => {
     }
   };
 
+  const validateForm = () => {
+    const now = new Date();
+    const departureTime = new Date(formData.departureTime);
+    const hoursUntilDeparture = (departureTime - now) / (1000 * 60 * 60);
+
+    if (hoursUntilDeparture < 24) {
+      toast.error('Impossible de modifier l\'heure de départ à moins de 24h du départ');
+      return false;
+    }
+
+    if (formData.price < 0) {
+      toast.error('Le prix ne peut pas être négatif');
+      return false;
+    }
+
+    if (formData.availableSeats < 1 || formData.availableSeats > 8) {
+      toast.error('Le nombre de places doit être compris entre 1 et 8');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
+
     try {
       await onUpdate(formData);
+      toast.success('Trajet modifié avec succès !');
     } catch (err) {
-      setError(err.message);
+      const errorMessage = err.response?.data?.error || err.message || 'Une erreur est survenue lors de la modification du trajet';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -10,7 +10,8 @@ const {
   getMyRides,
   confirmBooking,
   rejectBooking,
-  getMyBookings
+  getMyBookings,
+  rateTrip
 } = require('../controllers/rideController');
 
 const router = express.Router();
@@ -43,5 +44,8 @@ router
 router
   .route('/:id/passengers/:passengerId/reject')
   .post(protect, rejectBooking);
+
+// Route pour la notation
+router.post('/:id/rate', protect, rateTrip);
 
 module.exports = router;

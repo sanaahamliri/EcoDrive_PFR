@@ -22,6 +22,7 @@ import Settings from './features/admin/pages/Settings';
 import Bookings from './features/driver/pages/Bookings';
 import Statistics from './features/driver/pages/Statistics';
 import Profile from './features/driver/pages/Profile';
+import TripDetails from './features/user/components/trip-details';
 
 function App() {
   return (
@@ -36,14 +37,14 @@ function App() {
 
         {/* Routes utilisateur avec MainLayout */}
         <Route path="user/*" element={
-  <ProtectedRoute allowedRoles={['user']}>
-    <Routes>
-      <Route path="dashboard" element={<UserDashboard />} />
-      <Route path="profile" element={<UserProfile />} />
-    </Routes>
-  </ProtectedRoute>
-} />
-
+          <ProtectedRoute allowedRoles={['user']}>
+            <Routes>
+              <Route path="dashboard" element={<UserDashboard />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="trips/:id" element={<TripDetails />} />
+            </Routes>
+          </ProtectedRoute>
+        } />
 
         {/* Routes conducteur avec DriverLayout (sans MainLayout) */}
         <Route

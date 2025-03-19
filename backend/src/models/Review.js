@@ -24,7 +24,6 @@ const reviewSchema = new mongoose.Schema({
   },
   comment: {
     type: String,
-    required: [true, 'Un commentaire est requis'],
     maxLength: [500, 'Le commentaire ne peut pas dépasser 500 caractères']
   },
   type: {
@@ -36,10 +35,8 @@ const reviewSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Empêcher un utilisateur de laisser plusieurs avis pour le même trajet
 reviewSchema.index({ ride: 1, reviewer: 1 }, { unique: true });
 
-// Après la création d'un avis, mettre à jour les statistiques de l'utilisateur évalué
 reviewSchema.post('save', async function() {
   const Review = this.constructor;
   const User = require('./User');
