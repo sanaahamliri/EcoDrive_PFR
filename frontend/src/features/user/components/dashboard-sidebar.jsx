@@ -1,6 +1,29 @@
-"use client"
+"use client";
 
-export default function DashboardSidebar({ activeView, setActiveView, sidebarOpen, setSidebarOpen }) {
+import React, { useState, useEffect } from "react";
+import UserService from "../services/userService";
+
+export default function DashboardSidebar({
+  activeView,
+  setActiveView,
+  sidebarOpen,
+  setSidebarOpen,
+}) {
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const response = await UserService.getProfile();
+        setUserData(response.data);
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
   const menuItems = [
     {
       id: "dashboard",
@@ -12,21 +35,30 @@ export default function DashboardSidebar({ activeView, setActiveView, sidebarOpe
       label: "Mes trajets",
       icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 10a3 3 0 11-6 0 3 3 0 016 0z",
     },
-    { id: "history", label: "Historique", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
-    
+    {
+      id: "history",
+      label: "Historique",
+      icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
+    },
+
     {
       id: "notifications",
       label: "Notifications",
       icon: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
       badge: 5,
     },
-    { id: "profile", label: "Profil", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
-
-  ]
+    {
+      id: "profile",
+      label: "Profil",
+      icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
+    },
+  ];
 
   return (
     <div
-      className={`bg-white shadow-lg transition-all duration-300 ${sidebarOpen ? "w-64" : "w-20"} fixed inset-y-0 left-0 z-30 md:relative`}
+      className={`bg-white shadow-lg transition-all duration-300 ${
+        sidebarOpen ? "w-64" : "w-20"
+      } fixed inset-y-0 left-0 z-30 md:relative`}
     >
       <div className="flex flex-col h-full">
         {/* Header */}
@@ -50,7 +82,9 @@ export default function DashboardSidebar({ activeView, setActiveView, sidebarOpe
                   <circle cx="13" cy="17" r="2" />
                 </svg>
               </div>
-              {sidebarOpen && <div className="font-semibold text-lg">RideShare</div>}
+              {sidebarOpen && (
+                <div className="font-semibold text-lg">RideShare</div>
+              )}
             </div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -63,7 +97,12 @@ export default function DashboardSidebar({ activeView, setActiveView, sidebarOpe
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -77,7 +116,9 @@ export default function DashboardSidebar({ activeView, setActiveView, sidebarOpe
                 <button
                   onClick={() => setActiveView(item.id)}
                   className={`flex items-center w-full rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    activeView === item.id ? "bg-green-50 text-green-700" : "text-gray-700 hover:bg-gray-100"
+                    activeView === item.id
+                      ? "bg-green-50 text-green-700"
+                      : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   <svg
@@ -87,9 +128,16 @@ export default function DashboardSidebar({ activeView, setActiveView, sidebarOpe
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={item.icon}
+                    />
                   </svg>
-                  {sidebarOpen && <span className="flex-1 truncate">{item.label}</span>}
+                  {sidebarOpen && (
+                    <span className="flex-1 truncate">{item.label}</span>
+                  )}
                   {sidebarOpen && item.badge && (
                     <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-green-600 text-xs text-white">
                       {item.badge}
@@ -105,12 +153,23 @@ export default function DashboardSidebar({ activeView, setActiveView, sidebarOpe
         <div className="border-t border-gray-200 pt-2 px-3 py-4">
           <div className="flex items-center">
             <div className="h-8 w-8 rounded-full bg-gray-200 overflow-hidden">
-              <img src="https://randomuser.me/api/portraits/men/42.jpg" alt="User" />
+              <img
+                src={
+                  userData?.avatar
+                    ? `/uploads/${userData.avatar}`
+                    : "https://randomuser.me/api/portraits/men/42.jpg"
+                }
+                alt={userData?.firstName || "User"}
+              />
             </div>
-            {sidebarOpen && (
+            {sidebarOpen && userData && (
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-700">John Doe</p>
-                <p className="text-xs text-gray-500">Passager</p>
+                <p className="text-sm font-medium text-gray-700">
+                  {`${userData.firstName} ${userData.lastName}`}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {userData.role === "driver" ? "Conducteur" : "Passager"}
+                </p>
               </div>
             )}
           </div>
@@ -136,6 +195,5 @@ export default function DashboardSidebar({ activeView, setActiveView, sidebarOpe
         </div>
       </div>
     </div>
-  )
+  );
 }
-

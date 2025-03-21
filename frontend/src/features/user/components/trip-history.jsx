@@ -1,162 +1,169 @@
-import React from "react"
-import { useNavigate } from "react-router-dom"
-import TripService from "../services/tripService"
-import ContactModal from "./ContactModal"
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import TripService from "../services/tripService";
+import ContactModal from "./ContactModal";
 
 export default function TripHistory() {
-  const navigate = useNavigate()
-  const [trips, setTrips] = React.useState([])
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState(null)
-  const [selectedDriver, setSelectedDriver] = React.useState(null)
+  const navigate = useNavigate();
+  const [trips, setTrips] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+  const [selectedDriver, setSelectedDriver] = React.useState(null);
   const [filters, setFilters] = React.useState({
-    period: 'all',
-    destination: 'all',
-    search: ''
-  })
-  const [searchInput, setSearchInput] = React.useState('')
-  const searchTimeoutRef = React.useRef(null)
+    period: "all",
+    destination: "all",
+    search: "",
+  });
+  const [searchInput, setSearchInput] = React.useState("");
+  const searchTimeoutRef = React.useRef(null);
 
   React.useEffect(() => {
-    loadTrips()
-  }, [filters])
+    loadTrips();
+  }, [filters]);
 
   const loadTrips = async () => {
     try {
-      setLoading(true)
-      const response = await TripService.getMyTrips()
-      
-      let pastTrips = response.data.filter(trip => {
-        const tripDate = new Date(trip.departureTime)
-        const now = new Date()
-        return tripDate < now
-      })
+      setLoading(true);
+      const response = await TripService.getMyTrips();
 
-      const { period, destination, search } = filters
+      let pastTrips = response.data.filter((trip) => {
+        const tripDate = new Date(trip.departureTime);
+        const now = new Date();
+        return tripDate < now;
+      });
 
-      if (period !== 'all') {
-        const now = new Date()
+      const { period, destination, search } = filters;
+
+      if (period !== "all") {
+        const now = new Date();
         const periodMap = {
-          'month': 30,
-          '3months': 90,
-          '6months': 180,
-          'year': 365
-        }
-        const daysToSubtract = periodMap[period]
-        const startDate = new Date(now.setDate(now.getDate() - daysToSubtract))
-        
-        pastTrips = pastTrips.filter(trip => {
-          const tripDate = new Date(trip.departureTime)
-          return tripDate >= startDate
-        })
+          month: 30,
+          "3months": 90,
+          "6months": 180,
+          year: 365,
+        };
+        const daysToSubtract = periodMap[period];
+        const startDate = new Date(now.setDate(now.getDate() - daysToSubtract));
+
+        pastTrips = pastTrips.filter((trip) => {
+          const tripDate = new Date(trip.departureTime);
+          return tripDate >= startDate;
+        });
       }
 
-      if (destination !== 'all') {
-        pastTrips = pastTrips.filter(trip => 
-          trip.destination.city.toLowerCase() === destination.toLowerCase()
-        )
+      if (destination !== "all") {
+        pastTrips = pastTrips.filter(
+          (trip) =>
+            trip.destination.city.toLowerCase() === destination.toLowerCase()
+        );
       }
 
-      if (search.trim() !== '') {
-        const searchTerm = search.toLowerCase().trim()
-        pastTrips = pastTrips.filter(trip => 
-          trip.departure.city.toLowerCase().includes(searchTerm) ||
-          trip.destination.city.toLowerCase().includes(searchTerm) ||
-          `${trip.driver.firstName} ${trip.driver.lastName}`.toLowerCase().includes(searchTerm)
-        )
+      if (search.trim() !== "") {
+        const searchTerm = search.toLowerCase().trim();
+        pastTrips = pastTrips.filter(
+          (trip) =>
+            trip.departure.city.toLowerCase().includes(searchTerm) ||
+            trip.destination.city.toLowerCase().includes(searchTerm) ||
+            `${trip.driver.firstName} ${trip.driver.lastName}`
+              .toLowerCase()
+              .includes(searchTerm)
+        );
       }
 
-      setTrips(pastTrips)
-      setLoading(false)
+      setTrips(pastTrips);
+      setLoading(false);
     } catch (error) {
-      setError("Erreur lors du chargement des trajets")
-      setLoading(false)
-      console.error("Erreur lors du chargement des trajets:", error)
+      setError("Erreur lors du chargement des trajets");
+      setLoading(false);
+      console.error("Erreur lors du chargement des trajets:", error);
     }
-  }
+  };
 
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [filterType]: value
-    }))
-  }
+      [filterType]: value,
+    }));
+  };
 
   const handleSearchInputChange = (e) => {
-    const value = e.target.value
-    setSearchInput(value)
+    const value = e.target.value;
+    setSearchInput(value);
 
     if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
+      clearTimeout(searchTimeoutRef.current);
     }
 
     searchTimeoutRef.current = setTimeout(() => {
-      handleFilterChange('search', value)
-    }, 500)
-  }
+      handleFilterChange("search", value);
+    }, 500);
+  };
 
   const handleSearchSubmit = (e) => {
-    e.preventDefault()
-    handleFilterChange('search', searchInput)
-  }
+    e.preventDefault();
+    handleFilterChange("search", searchInput);
+  };
 
   const exportToCSV = () => {
     const headers = [
-      'Date',
-      'Heure',
-      'Départ',
-      'Destination',
-      'Conducteur',
-      'Prix',
-      'Note'
-    ]
+      "Date",
+      "Heure",
+      "Départ",
+      "Destination",
+      "Conducteur",
+      "Prix",
+      "Note",
+    ];
 
-    const rows = trips.map(trip => [
-      new Date(trip.departureTime).toLocaleDateString('fr-FR'),
-      new Date(trip.departureTime).toLocaleTimeString('fr-FR'),
+    const rows = trips.map((trip) => [
+      new Date(trip.departureTime).toLocaleDateString("fr-FR"),
+      new Date(trip.departureTime).toLocaleTimeString("fr-FR"),
       trip.departure.city,
       trip.destination.city,
       `${trip.driver.firstName} ${trip.driver.lastName}`,
       `${trip.price} DH`,
-      trip.userRating || 'Non noté'
-    ])
+      trip.userRating || "Non noté",
+    ]);
 
     const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n')
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    
-    link.setAttribute('href', url)
-    link.setAttribute('download', `historique_trajets_${new Date().toLocaleDateString('fr-FR')}.csv`)
-    link.style.visibility = 'hidden'
-    
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `historique_trajets_${new Date().toLocaleDateString("fr-FR")}.csv`
+    );
+    link.style.visibility = "hidden";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleShowContact = (driver) => {
-    setSelectedDriver(driver)
-  }
+    setSelectedDriver(driver);
+  };
 
   const handleCloseContact = () => {
-    setSelectedDriver(null)
-  }
+    setSelectedDriver(null);
+  };
 
   const handleShowDetails = (tripId) => {
-    navigate(`/user/trips/${tripId}`)
-  }
+    navigate(`/user/trips/${tripId}`);
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -164,14 +171,16 @@ export default function TripHistory() {
       <div className="text-center py-8">
         <p className="text-red-600">{error}</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Historique des trajets</h1>
-        <button 
+        <h1 className="text-3xl font-bold tracking-tight">
+          Historique des trajets
+        </h1>
+        <button
           onClick={exportToCSV}
           className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
           disabled={trips.length === 0}
@@ -199,10 +208,10 @@ export default function TripHistory() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">Période</label>
-              <select 
+              <select
                 className="w-full rounded-md border border-gray-300 px-3 py-2"
                 value={filters.period}
-                onChange={(e) => handleFilterChange('period', e.target.value)}
+                onChange={(e) => handleFilterChange("period", e.target.value)}
               >
                 <option value="all">Toutes les périodes</option>
                 <option value="month">Dernier mois</option>
@@ -214,10 +223,12 @@ export default function TripHistory() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Destination</label>
-              <select 
+              <select
                 className="w-full rounded-md border border-gray-300 px-3 py-2"
                 value={filters.destination}
-                onChange={(e) => handleFilterChange('destination', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("destination", e.target.value)
+                }
               >
                 <option value="all">Toutes les destinations</option>
                 <option value="rabat">Rabat</option>
@@ -277,9 +288,13 @@ export default function TripHistory() {
                 <tr className="border-b">
                   <th className="px-4 py-2 text-left font-medium">Date</th>
                   <th className="px-4 py-2 text-left font-medium">Trajet</th>
-                  <th className="px-4 py-2 text-left font-medium">Conducteur</th>
+                  <th className="px-4 py-2 text-left font-medium">
+                    Conducteur
+                  </th>
                   <th className="px-4 py-2 text-left font-medium">Prix</th>
-                  <th className="px-4 py-2 text-left font-medium">Votre note</th>
+                  <th className="px-4 py-2 text-left font-medium">
+                    Votre note
+                  </th>
                   <th className="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
               </thead>
@@ -288,16 +303,22 @@ export default function TripHistory() {
                   <tr key={trip._id} className="border-b">
                     <td className="px-4 py-4">
                       <div className="font-medium">
-                        {new Date(trip.departureTime).toLocaleDateString("fr-FR", {
-                          day: "numeric",
-                          month: "short",
-                        })}
+                        {new Date(trip.departureTime).toLocaleDateString(
+                          "fr-FR",
+                          {
+                            day: "numeric",
+                            month: "short",
+                          }
+                        )}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {new Date(trip.departureTime).toLocaleTimeString("fr-FR", {
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        })}
+                        {new Date(trip.departureTime).toLocaleTimeString(
+                          "fr-FR",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-4">
@@ -346,7 +367,9 @@ export default function TripHistory() {
                             key={star}
                             xmlns="http://www.w3.org/2000/svg"
                             className={`h-4 w-4 ${
-                              star <= (trip.review?.rating || 0) ? "fill-green-600 text-green-600" : "text-gray-300"
+                              star <= (trip.driver.stats?.rating || 0)
+                                ? "fill-green-600 text-green-600"
+                                : "text-gray-300"
                             }`}
                             viewBox="0 0 20 20"
                             fill="currentColor"
@@ -357,7 +380,7 @@ export default function TripHistory() {
                       </div>
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <button 
+                      <button
                         onClick={() => handleShowContact(trip.driver)}
                         className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 mr-2"
                       >
@@ -377,7 +400,7 @@ export default function TripHistory() {
                         </svg>
                         <span className="sr-only">Contacter</span>
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleShowDetails(trip._id)}
                         className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
                       >
@@ -394,12 +417,8 @@ export default function TripHistory() {
 
       {/* Contact Modal */}
       {selectedDriver && (
-        <ContactModal
-          driver={selectedDriver}
-          onClose={handleCloseContact}
-        />
+        <ContactModal driver={selectedDriver} onClose={handleCloseContact} />
       )}
     </div>
-  )
+  );
 }
-

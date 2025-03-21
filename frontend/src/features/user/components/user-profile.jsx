@@ -1,20 +1,119 @@
-"use client"
+"use client";
 
-import React from "react"
+import React from "react";
+import UserService from "../services/userService";
+import { toast } from "react-toastify";
 
 class UserProfile extends React.Component {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       activeTab: "personal",
+      userData: null,
+      loading: true,
+      preferences: {
+        language: "fr",
+        notifications: {
+          email: true,
+          push: true,
+        },
+        travelPreferences: {
+          smoking: false,
+          music: true,
+          pets: false,
+          conversation: "moderate",
+        },
+      },
+    };
+  }
+
+  async componentDidMount() {
+    try {
+      const response = await UserService.getProfile();
+      this.setState({
+        userData: response.data,
+        loading: false,
+      });
+    } catch (error) {
+      toast.error("Erreur lors du chargement du profil");
+      console.error("Error loading profile:", error);
     }
   }
 
+  handleProfileUpdate = async (event) => {
+    event.preventDefault();
+    try {
+      const userData = {
+        firstName: this.state.userData.firstName,
+        lastName: this.state.userData.lastName,
+        phoneNumber: this.state.userData.phoneNumber,
+        email: this.state.userData.email,
+      };
+
+      const response = await UserService.updateProfile(userData);
+      this.setState({ userData: response.data });
+      toast.success("Profil mis à jour avec succès");
+    } catch (error) {
+      toast.error("Erreur lors de la mise à jour du profil");
+      console.error("Error updating profile:", error);
+    }
+  };
+
+  handlePreferencesUpdate = async () => {
+    try {
+      const preferences = {
+        language: "fr",
+        notifications: {
+          email: true,
+          push: true,
+        },
+        travelPreferences: {
+          smoking: this.state.preferences.smoking,
+          music: this.state.preferences.music,
+          pets: this.state.preferences.pets,
+          conversation: this.state.preferences.conversation,
+        },
+      };
+
+      await UserService.updatePreferences(preferences);
+      toast.success("Préférences mises à jour avec succès");
+    } catch (error) {
+      toast.error("Erreur lors de la mise à jour des préférences");
+      console.error("Error updating preferences:", error);
+    }
+  };
+
   setActiveTab = (tab) => {
-    this.setState({ activeTab: tab })
-  }
+    this.setState({ activeTab: tab });
+  };
 
   render() {
+    const { userData, loading } = this.state;
+
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        </div>
+      );
+    }
+
+    if (!userData) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <p className="text-gray-600 mb-4">
+            Impossible de charger les données du profil
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            Réessayer
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -33,7 +132,12 @@ class UserProfile extends React.Component {
                 strokeWidth={2}
                 d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
               />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
             </svg>
             Paramètres
           </button>
@@ -46,8 +150,12 @@ class UserProfile extends React.Component {
                 <div className="relative">
                   <div className="h-24 w-24 rounded-full overflow-hidden">
                     <img
-                      src="https://randomuser.me/api/portraits/men/42.jpg"
-                      alt="User"
+                      src={
+                        userData?.avatar
+                          ? `/uploads/${userData.avatar}`
+                          : "https://randomuser.me/api/portraits/men/42.jpg"
+                      }
+                      alt={userData?.firstName}
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -77,8 +185,17 @@ class UserProfile extends React.Component {
                 </div>
 
                 <div className="text-center">
-                  <h2 className="text-xl font-bold">John Doe</h2>
-                  <p className="text-sm text-gray-500">Membre depuis Janvier 2023</p>
+                  <h2 className="text-xl font-bold">
+                    {userData?.firstName} {userData?.lastName}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {userData?.role === "driver" ? "Conducteur" : "Passager"}{" "}
+                    depuis{" "}
+                    {new Date(userData?.createdAt).toLocaleDateString("fr-FR", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
                 </div>
 
                 <div className="flex items-center space-x-1">
@@ -89,14 +206,37 @@ class UserProfile extends React.Component {
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 20 20"
                         fill="currentColor"
-                        className="h-4 w-4 text-green-600"
+                        className={`h-4 w-4 ${
+                          star <= (userData?.stats?.rating || 0)
+                            ? "text-green-600"
+                            : "text-gray-300"
+                        }`}
                       >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
                   </div>
-                  <span className="text-sm font-medium">4.8</span>
-                  <span className="text-sm text-gray-500">(24 avis)</span>
+                  <span className="text-sm font-medium">
+                    {userData?.stats?.rating?.toFixed(1) || "0.0"}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    ({userData?.stats?.numberOfRatings || 0} avis)
+                  </span>
+                </div>
+
+                <div className="w-full space-y-2 pt-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Trajets effectués</span>
+                    <span className="font-medium">
+                      {userData?.stats?.totalTrips || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Distance totale</span>
+                    <span className="font-medium">
+                      {userData?.stats?.totalDistance || 0} km
+                    </span>
+                  </div>
                 </div>
 
                 <div className="w-full space-y-2 pt-4">
@@ -104,7 +244,11 @@ class UserProfile extends React.Component {
                     <div className="flex items-center space-x-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 text-green-600"
+                        className={`h-4 w-4 ${
+                          userData?.isVerified
+                            ? "text-green-600"
+                            : "text-gray-400"
+                        }`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -119,34 +263,19 @@ class UserProfile extends React.Component {
                       <span className="text-sm">Profil vérifié</span>
                     </div>
                     <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                      <input type="checkbox" id="profile-verified" className="sr-only" defaultChecked={true} />
+                      <input
+                        type="checkbox"
+                        id="profile-verified"
+                        className="sr-only"
+                        checked={userData?.isVerified}
+                        readOnly
+                      />
                       <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
-                      <div className="dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition"></div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 text-green-600"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                        />
-                      </svg>
-                      <span className="text-sm">Paiement vérifié</span>
-                    </div>
-                    <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                      <input type="checkbox" id="payment-verified" className="sr-only" defaultChecked={true} />
-                      <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
-                      <div className="dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition"></div>
+                      <div
+                        className={`dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition ${
+                          userData?.isVerified ? "translate-x-4" : ""
+                        }`}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -194,13 +323,20 @@ class UserProfile extends React.Component {
               {this.state.activeTab === "personal" && (
                 <div className="rounded-lg bg-white shadow">
                   <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold">Informations personnelles</h2>
-                    <p className="text-sm text-gray-500">Mettez à jour vos informations personnelles</p>
+                    <h2 className="text-lg font-semibold">
+                      Informations personnelles
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Mettez à jour vos informations personnelles
+                    </p>
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="firstName"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Prénom
                         </label>
                         <div className="relative">
@@ -222,14 +358,23 @@ class UserProfile extends React.Component {
                             id="firstName"
                             type="text"
                             placeholder="Prénom"
-                            defaultValue="John"
+                            value={userData?.firstName || ""}
+                            onChange={(e) =>
+                              this.handleInputChange(
+                                "firstName",
+                                e.target.value
+                              )
+                            }
                             className="w-full rounded-md border border-gray-300 pl-9 py-2"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="lastName"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Nom
                         </label>
                         <div className="relative">
@@ -251,7 +396,10 @@ class UserProfile extends React.Component {
                             id="lastName"
                             type="text"
                             placeholder="Nom"
-                            defaultValue="Doe"
+                            value={userData?.lastName || ""}
+                            onChange={(e) =>
+                              this.handleInputChange("lastName", e.target.value)
+                            }
                             className="w-full rounded-md border border-gray-300 pl-9 py-2"
                           />
                         </div>
@@ -259,7 +407,10 @@ class UserProfile extends React.Component {
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Email
                       </label>
                       <div className="relative">
@@ -281,14 +432,20 @@ class UserProfile extends React.Component {
                           id="email"
                           type="email"
                           placeholder="Email"
-                          defaultValue="john.doe@example.com"
+                          value={userData?.email || ""}
+                          onChange={(e) =>
+                            this.handleInputChange("email", e.target.value)
+                          }
                           className="w-full rounded-md border border-gray-300 pl-9 py-2"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="phone"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Téléphone
                       </label>
                       <div className="relative">
@@ -310,14 +467,23 @@ class UserProfile extends React.Component {
                           id="phone"
                           type="text"
                           placeholder="Téléphone"
-                          defaultValue="+212 6XX XXX XXX"
+                          value={userData?.phoneNumber || ""}
+                          onChange={(e) =>
+                            this.handleInputChange(
+                              "phoneNumber",
+                              e.target.value
+                            )
+                          }
                           className="w-full rounded-md border border-gray-300 pl-9 py-2"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="address"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Adresse
                       </label>
                       <div className="relative">
@@ -345,26 +511,38 @@ class UserProfile extends React.Component {
                           id="address"
                           type="text"
                           placeholder="Adresse"
-                          defaultValue="123 Rue Example, Casablanca"
+                          value={userData?.address || ""}
+                          onChange={(e) =>
+                            this.handleInputChange("address", e.target.value)
+                          }
                           className="w-full rounded-md border border-gray-300 pl-9 py-2"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="bio"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Bio
                       </label>
                       <textarea
                         id="bio"
                         placeholder="Parlez-nous de vous..."
-                        defaultValue="J'adore voyager et rencontrer de nouvelles personnes. Je suis un passager respectueux et ponctuel."
+                        value={userData?.bio || ""}
+                        onChange={(e) =>
+                          this.handleInputChange("bio", e.target.value)
+                        }
                         className="w-full rounded-md border border-gray-300 px-3 py-2 min-h-[100px]"
                       />
                     </div>
 
                     <div className="pt-4">
-                      <button className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                      <button
+                        onClick={this.handleProfileUpdate}
+                        className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+                      >
                         Enregistrer les modifications
                       </button>
                     </div>
@@ -375,74 +553,59 @@ class UserProfile extends React.Component {
               {this.state.activeTab === "preferences" && (
                 <div className="rounded-lg bg-white shadow">
                   <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold">Préférences de trajet</h2>
-                    <p className="text-sm text-gray-500">Personnalisez vos préférences pour les trajets</p>
+                    <h2 className="text-lg font-semibold">
+                      Préférences de trajet
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Personnalisez vos préférences pour les trajets
+                    </p>
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <label className="block text-sm font-medium text-gray-700">Climatisation</label>
-                          <p className="text-sm text-gray-500">Préférence pour les véhicules climatisés</p>
-                        </div>
-                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                          <input type="checkbox" id="climatisation" className="sr-only" defaultChecked={true} />
-                          <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
-                          <div className="dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition"></div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <label className="block text-sm font-medium text-gray-700">Non-fumeur</label>
-                          <p className="text-sm text-gray-500">Préférence pour les trajets sans fumée</p>
-                        </div>
-                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                          <input type="checkbox" id="non-fumeur" className="sr-only" defaultChecked={true} />
-                          <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
-                          <div className="dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition"></div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <label className="block text-sm font-medium text-gray-700">Musique</label>
-                          <p className="text-sm text-gray-500">Préférence pour la musique pendant le trajet</p>
-                        </div>
-                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                          <input type="checkbox" id="musique" className="sr-only" defaultChecked={false} />
-                          <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
-                          <div className="dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition"></div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <label className="block text-sm font-medium text-gray-700">Animaux</label>
-                          <p className="text-sm text-gray-500">Accepte les animaux pendant le trajet</p>
-                        </div>
-                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                          <input type="checkbox" id="animaux" className="sr-only" defaultChecked={false} />
-                          <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
-                          <div className="dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition"></div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <label className="block text-sm font-medium text-gray-700">Conversation</label>
-                          <p className="text-sm text-gray-500">Préférence pour les conversations pendant le trajet</p>
-                        </div>
-                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                          <input type="checkbox" id="conversation" className="sr-only" defaultChecked={true} />
-                          <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
-                          <div className="dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition"></div>
-                        </div>
-                      </div>
+                      {Object.entries(this.state.preferences).map(
+                        ([key, value]) => (
+                          <div
+                            key={key}
+                            className="flex items-center justify-between"
+                          >
+                            <div className="space-y-0.5">
+                              <label className="block text-sm font-medium text-gray-700">
+                                {this.getPreferenceLabel(key)}
+                              </label>
+                              <p className="text-sm text-gray-500">
+                                {this.getPreferenceDescription(key)}
+                              </p>
+                            </div>
+                            <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                              <input
+                                type="checkbox"
+                                id={key}
+                                className="sr-only"
+                                checked={value}
+                                onChange={(e) =>
+                                  this.handlePreferenceChange(
+                                    key,
+                                    e.target.checked
+                                  )
+                                }
+                              />
+                              <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
+                              <div
+                                className={`dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition ${
+                                  value ? "translate-x-4" : ""
+                                }`}
+                              ></div>
+                            </div>
+                          </div>
+                        )
+                      )}
                     </div>
 
                     <div className="pt-4">
-                      <button className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                      <button
+                        onClick={this.handlePreferencesUpdate}
+                        className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+                      >
                         Enregistrer les préférences
                       </button>
                     </div>
@@ -453,8 +616,12 @@ class UserProfile extends React.Component {
               {this.state.activeTab === "payment" && (
                 <div className="rounded-lg bg-white shadow">
                   <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold">Méthodes de paiement</h2>
-                    <p className="text-sm text-gray-500">Gérez vos méthodes de paiement</p>
+                    <h2 className="text-lg font-semibold">
+                      Méthodes de paiement
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Gérez vos méthodes de paiement
+                    </p>
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="rounded-lg border p-4">
@@ -477,8 +644,12 @@ class UserProfile extends React.Component {
                             </svg>
                           </div>
                           <div>
-                            <div className="font-medium">Visa se terminant par 4242</div>
-                            <div className="text-sm text-gray-500">Expire le 12/25</div>
+                            <div className="font-medium">
+                              Visa se terminant par 4242
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Expire le 12/25
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -516,9 +687,48 @@ class UserProfile extends React.Component {
           </div>
         </div>
       </div>
-    )
+    );
   }
+
+  getPreferenceLabel(key) {
+    const labels = {
+      smoking: "Non-fumeur",
+      music: "Musique",
+      pets: "Animaux",
+      conversation: "Conversation",
+      airConditioning: "Climatisation",
+    };
+    return labels[key] || key;
+  }
+
+  getPreferenceDescription(key) {
+    const descriptions = {
+      smoking: "Préférence pour les trajets sans fumée",
+      music: "Préférence pour la musique pendant le trajet",
+      pets: "Accepte les animaux pendant le trajet",
+      conversation: "Préférence pour les conversations pendant le trajet",
+      airConditioning: "Préférence pour les véhicules climatisés",
+    };
+    return descriptions[key] || "";
+  }
+
+  handleInputChange = (field, value) => {
+    this.setState((prevState) => ({
+      userData: {
+        ...prevState.userData,
+        [field]: value,
+      },
+    }));
+  };
+
+  handlePreferenceChange = (preference, value) => {
+    this.setState((prevState) => ({
+      preferences: {
+        ...prevState.preferences,
+        [preference]: value,
+      },
+    }));
+  };
 }
 
-export default UserProfile
-
+export default UserProfile;

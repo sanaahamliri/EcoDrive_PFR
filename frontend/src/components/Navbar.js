@@ -3,21 +3,21 @@ import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   return (
-    <nav className="bg-white shadow">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<nav className="sticky top-0 bg-gradient-to-r from-[#12AD90] via-[#0e9a7f] to-[#12AD90] shadow z-10 bg-opacity-90">
+<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link to="/" className="flex items-center">
-              <span className="text-xl font-bold text-green-600">EcoDrive</span>
+              <span className="text-xl font-bold text-white">EcoDrive</span>
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <Link to="/login" className="text-gray-700 hover:text-green-600">
+            <Link to="/login" className="text-white hover:text-[#0e9a7f]">
               Connexion
             </Link>
             <Link
               to="/register"
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+              className="bg-[#0e9a7f] text-white px-4 py-2 rounded-md hover:bg-[#12AD90]"
             >
               Inscription
             </Link>
@@ -28,4 +28,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

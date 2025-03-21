@@ -1,37 +1,49 @@
-const Review = require('../models/Review');
-const Ride = require('../models/Ride');
-const User = require('../models/User');
-const ErrorResponse = require('../utils/errorResponse');
-const asyncHandler = require('../middlewares/async');
+const Review = require("../models/Review");
+const Ride = require("../models/Ride");
+const User = require("../models/User");
+const ErrorResponse = require("../utils/errorResponse");
+const asyncHandler = require("../middlewares/async");
+const mongoose = require("mongoose");
+
+const PORT = process.env.PORT || 5000;
 
 exports.createReview = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.body.ride);
-  
+
   if (!ride) {
-    return next(new ErrorResponse('Trajet non trouvé', 404));
+    return next(new ErrorResponse("Trajet non trouvé", 404));
   }
 
   // Vérifier que le trajet est terminé
   if (new Date(ride.departureTime) > new Date()) {
-    return next(new ErrorResponse('Vous ne pouvez noter qu\'un trajet terminé', 400));
+    return next(
+      new ErrorResponse("Vous ne pouvez noter qu'un trajet terminé", 400)
+    );
   }
 
   // Vérifier que l'utilisateur était passager ou conducteur
-  const wasPassenger = ride.passengers.some(p => p.user.toString() === req.user.id);
+  const wasPassenger = ride.passengers.some(
+    (p) => p.user.toString() === req.user.id
+  );
   const wasDriver = ride.driver.toString() === req.user.id;
 
   if (!wasPassenger && !wasDriver) {
-    return next(new ErrorResponse('Vous devez avoir participé au trajet pour le noter', 403));
+    return next(
+      new ErrorResponse(
+        "Vous devez avoir participé au trajet pour le noter",
+        403
+      )
+    );
   }
 
   // Vérifier si l'utilisateur a déjà noté ce trajet
   const existingReview = await Review.findOne({
     ride: req.body.ride,
-    reviewer: req.user.id
+    reviewer: req.user.id,
   });
 
   if (existingReview) {
-    return next(new ErrorResponse('Vous avez déjà noté ce trajet', 400));
+    return next(new ErrorResponse("Vous avez déjà noté ce trajet", 400));
   }
 
   // Créer la review
@@ -40,21 +52,16 @@ exports.createReview = asyncHandler(async (req, res, next) => {
     comment: req.body.comment,
     ride: req.body.ride,
     reviewer: req.user.id,
-    reviewedUser: wasPassenger ? ride.driver : ride.passengers[0].user
+    reviewedUser: wasPassenger ? ride.driver : ride.passengers[0].user,
+    type: wasPassenger ? "driver" : "passenger",
   });
 
   // Mettre à jour la note moyenne de l'utilisateur noté
-  const reviews = await Review.find({ reviewedUser: review.reviewedUser });
-  const avgRating = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
-
-  await User.findByIdAndUpdate(review.reviewedUser, {
-    'stats.rating': avgRating.toFixed(1),
-    'stats.reviewCount': reviews.length
-  });
+  await updateUserRating(review.reviewedUser);
 
   res.status(201).json({
     success: true,
-    data: review
+    data: review,
   });
 });
 
@@ -80,20 +87,20 @@ exports.getReviews = asyncHandler(async (req, res) => {
 
   const reviews = await Review.find(query)
     .populate({
-      path: 'reviewer',
-      select: 'firstName lastName avatar'
+      path: "reviewer",
+      select: "firstName lastName avatar",
     })
     .populate({
-      path: 'reviewedUser',
-      select: 'firstName lastName avatar'
+      path: "reviewedUser",
+      select: "firstName lastName avatar stats",
     })
     .populate({
-      path: 'ride',
-      select: 'departure destination departureTime'
+      path: "ride",
+      select: "departure destination departureTime",
     })
     .skip(startIndex)
     .limit(limit)
-    .sort('-createdAt');
+    .sort("-createdAt");
 
   // Pagination result
   const pagination = {};
@@ -108,7 +115,7 @@ exports.getReviews = asyncHandler(async (req, res) => {
     success: true,
     count: reviews.length,
     pagination,
-    data: reviews
+    data: reviews,
   });
 });
 
@@ -116,18 +123,20 @@ exports.updateReview = asyncHandler(async (req, res, next) => {
   let review = await Review.findById(req.params.id);
 
   if (!review) {
-    return next(new ErrorResponse('Avis non trouvé', 404));
+    return next(new ErrorResponse("Avis non trouvé", 404));
   }
 
   // Vérifier que c'est bien l'auteur qui modifie
-  if (review.reviewer.toString() !== req.user.id && req.user.role !== 'admin') {
-    return next(new ErrorResponse('Non autorisé à modifier cet avis', 401));
+  if (review.reviewer.toString() !== req.user.id && req.user.role !== "admin") {
+    return next(new ErrorResponse("Non autorisé à modifier cet avis", 401));
   }
 
   // Empêcher la modification après 48h
   const hours = Math.abs(new Date() - review.createdAt) / 36e5;
   if (hours > 48) {
-    return next(new ErrorResponse('Impossible de modifier un avis après 48h', 400));
+    return next(
+      new ErrorResponse("Impossible de modifier un avis après 48h", 400)
+    );
   }
 
   review = await Review.findByIdAndUpdate(
@@ -138,15 +147,16 @@ exports.updateReview = asyncHandler(async (req, res, next) => {
 
   // Mettre à jour la note moyenne
   const reviews = await Review.find({ reviewedUser: review.reviewedUser });
-  const avgRating = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+  const avgRating =
+    reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
 
   await User.findByIdAndUpdate(review.reviewedUser, {
-    'stats.rating': avgRating.toFixed(1)
+    "stats.rating": avgRating.toFixed(1),
   });
 
   res.status(200).json({
     success: true,
-    data: review
+    data: review,
   });
 });
 
@@ -154,29 +164,94 @@ exports.deleteReview = asyncHandler(async (req, res, next) => {
   const review = await Review.findById(req.params.id);
 
   if (!review) {
-    return next(new ErrorResponse('Avis non trouvé', 404));
+    return next(new ErrorResponse("Avis non trouvé", 404));
   }
 
   // Vérifier que c'est bien l'auteur qui supprime
-  if (review.reviewer.toString() !== req.user.id && req.user.role !== 'admin') {
-    return next(new ErrorResponse('Non autorisé à supprimer cet avis', 401));
+  if (review.reviewer.toString() !== req.user.id && req.user.role !== "admin") {
+    return next(new ErrorResponse("Non autorisé à supprimer cet avis", 401));
   }
 
   await review.remove();
 
   // Mettre à jour la note moyenne
   const reviews = await Review.find({ reviewedUser: review.reviewedUser });
-  const avgRating = reviews.length > 0
-    ? reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length
-    : 0;
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length
+      : 0;
 
   await User.findByIdAndUpdate(review.reviewedUser, {
-    'stats.rating': avgRating.toFixed(1),
-    'stats.reviewCount': reviews.length
+    "stats.rating": avgRating.toFixed(1),
+    "stats.reviewCount": reviews.length,
   });
 
   res.status(200).json({
     success: true,
-    data: {}
+    data: {},
   });
 });
+
+exports.getTripReviews = asyncHandler(async (req, res) => {
+  const { tripId } = req.params;
+  const userId = req.user.id;
+
+  console.log("Received request for trip reviews:", tripId); // Debug log
+
+  // Vérifier si le tripId est valide
+  if (!mongoose.Types.ObjectId.isValid(tripId)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid trip ID format",
+    });
+  }
+
+  // Récupérer toutes les reviews pour ce trajet
+  const reviews = await Review.find({ ride: tripId })
+    .populate({
+      path: "reviewer",
+      select: "firstName lastName avatar",
+    })
+    .populate({
+      path: "reviewedUser",
+      select: "firstName lastName avatar stats",
+    });
+
+  console.log("Found reviews:", reviews.length); // Debug log
+
+  // Récupérer la review de l'utilisateur courant
+  const userReview = reviews.find(
+    (review) => review.reviewer._id.toString() === userId
+  );
+
+  res.status(200).json({
+    success: true,
+    data: {
+      reviews,
+      userReview,
+    },
+  });
+});
+
+// Fonction utilitaire pour mettre à jour la note moyenne d'un utilisateur
+const updateUserRating = async (userId) => {
+  const stats = await Review.aggregate([
+    {
+      $match: { reviewedUser: mongoose.Types.ObjectId(userId) },
+    },
+    {
+      $group: {
+        _id: "$reviewedUser",
+        averageRating: { $avg: "$rating" },
+        numberOfReviews: { $sum: 1 },
+      },
+    },
+  ]);
+
+  if (stats.length > 0) {
+    await User.findByIdAndUpdate(userId, {
+      "stats.rating": Math.round(stats[0].averageRating * 10) / 10,
+      "stats.reviewCount": stats[0].numberOfReviews,
+    });
+  }
+};

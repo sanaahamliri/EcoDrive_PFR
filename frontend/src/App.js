@@ -31,10 +31,11 @@ function App() {
         {/* Routes publiques avec MainLayout */}
         <Route element={<MainLayout />}>
           <Route index element={<Home />} />
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
         </Route>
 
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
+        
         {/* Routes utilisateur avec MainLayout */}
         <Route path="user/*" element={
           <ProtectedRoute allowedRoles={['user']}>

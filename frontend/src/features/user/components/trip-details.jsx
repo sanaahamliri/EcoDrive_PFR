@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import TripService from "../services/tripService";
-import { ArrowLeft, MapPin, Calendar, Clock, Car, CheckCircle, Star, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  Clock,
+  Car,
+  CheckCircle,
+  Star,
+  Send,
+} from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 
 export default function TripDetails() {
   const { id } = useParams();
@@ -14,9 +24,12 @@ export default function TripDetails() {
   const [userComment, setUserComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [userReview, setUserReview] = useState(null);
 
   useEffect(() => {
     loadTripDetails();
+    loadReviews();
   }, [id]);
 
   const loadTripDetails = async () => {
@@ -41,12 +54,25 @@ export default function TripDetails() {
     }
   };
 
+  const loadReviews = async () => {
+    try {
+      const response = await axios.get(`/api/v1/reviews/trip/${id}`);
+      setReviews(response.data.data.reviews);
+      setUserReview(response.data.data.userReview);
+    } catch (error) {
+      console.error("Error loading reviews:", error);
+    }
+  };
+
   const handleRatingSubmit = async () => {
     if (!userRating) {
-      toast.warning("Veuillez sélectionner une note avant d'envoyer votre évaluation", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.warning(
+        "Veuillez sélectionner une note avant d'envoyer votre évaluation",
+        {
+          position: "top-right",
+          autoClose: 3000,
+        }
+      );
       return;
     }
 
@@ -90,28 +116,34 @@ export default function TripDetails() {
   };
 
   const getInitials = (firstName, lastName) => {
-    return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase();
+    return `${firstName?.charAt(0) || ""}${
+      lastName?.charAt(0) || ""
+    }`.toUpperCase();
   };
 
   const getTripStatusBadge = (status) => {
     const statusStyles = {
       completed: "bg-green-100 text-green-800 border-green-200",
       cancelled: "bg-red-100 text-red-800 border-red-200",
-      default: "bg-blue-100 text-blue-800 border-blue-200"
+      default: "bg-blue-100 text-blue-800 border-blue-200",
     };
 
     const statusText = {
       completed: "Terminé",
       cancelled: "Annulé",
-      default: status
+      default: status,
     };
 
     const style = statusStyles[status] || statusStyles.default;
     const text = statusText[status] || statusText.default;
 
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full border text-sm font-medium ${style}`}>
-        {status === "completed" && <CheckCircle className="h-3.5 w-3.5 mr-1.5" />}
+      <span
+        className={`inline-flex items-center px-3 py-1 rounded-full border text-sm font-medium ${style}`}
+      >
+        {status === "completed" && (
+          <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+        )}
         {text}
       </span>
     );
@@ -137,7 +169,9 @@ export default function TripDetails() {
   if (!trip) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <div className="text-gray-600 text-lg font-medium">Trajet non trouvé</div>
+        <div className="text-gray-600 text-lg font-medium">
+          Trajet non trouvé
+        </div>
         <button
           onClick={() => navigate(-1)}
           className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
@@ -201,13 +235,23 @@ export default function TripDetails() {
             <div className="flex-1">
               <div className="mb-4">
                 <h3 className="font-semibold text-lg">{trip.departure.city}</h3>
-                <p className="text-gray-600 text-sm">{trip.departure.address}</p>
-                <p className="text-sm font-medium text-blue-600 mt-1">{formatTime(trip.departureTime)}</p>
+                <p className="text-gray-600 text-sm">
+                  {trip.departure.address}
+                </p>
+                <p className="text-sm font-medium text-blue-600 mt-1">
+                  {formatTime(trip.departureTime)}
+                </p>
               </div>
               <div>
-                <h3 className="font-semibold text-lg">{trip.destination.city}</h3>
-                <p className="text-gray-600 text-sm">{trip.destination.address}</p>
-                <p className="text-sm font-medium text-blue-600 mt-1">{formatTime(trip.arrivalTime)}</p>
+                <h3 className="font-semibold text-lg">
+                  {trip.destination.city}
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  {trip.destination.address}
+                </p>
+                <p className="text-sm font-medium text-blue-600 mt-1">
+                  {formatTime(trip.arrivalTime)}
+                </p>
               </div>
             </div>
           </div>
@@ -251,12 +295,14 @@ export default function TripDetails() {
                           i < Math.floor(trip.driver.rating)
                             ? "text-yellow-400 fill-yellow-400"
                             : i < trip.driver.rating
-                              ? "text-yellow-400 fill-yellow-400 opacity-50"
-                              : "text-gray-300"
+                            ? "text-yellow-400 fill-yellow-400 opacity-50"
+                            : "text-gray-300"
                         }`}
                       />
                     ))}
-                    <span className="ml-2 text-sm font-medium">{trip.driver.rating}</span>
+                    <span className="ml-2 text-sm font-medium">
+                      {trip.driver.rating}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -273,7 +319,9 @@ export default function TripDetails() {
               <div className="p-4 rounded-lg bg-gray-50 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Modèle</span>
-                  <span className="font-medium">{trip.vehicle?.model || "Non spécifié"}</span>
+                  <span className="font-medium">
+                    {trip.vehicle?.model || "Non spécifié"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Couleur</span>
@@ -282,102 +330,150 @@ export default function TripDetails() {
                       className="h-4 w-4 rounded-full"
                       style={{
                         backgroundColor:
-                          trip.vehicle?.color?.toLowerCase() === "noir" ? "black" : trip.vehicle?.color?.toLowerCase() || "gray",
+                          trip.vehicle?.color?.toLowerCase() === "noir"
+                            ? "black"
+                            : trip.vehicle?.color?.toLowerCase() || "gray",
                       }}
                     ></span>
-                    <span className="font-medium">{trip.vehicle?.color || "Non spécifié"}</span>
+                    <span className="font-medium">
+                      {trip.vehicle?.color || "Non spécifié"}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Immatriculation</span>
-                  <span className="font-medium">{trip.vehicle?.plate || "Non spécifié"}</span>
+                  <span className="font-medium">
+                    {trip.vehicle?.plate || "Non spécifié"}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Section d'évaluation */}
-        <div className="p-6 bg-gray-50 border-t">
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Évaluer votre trajet</h2>
-
-            {ratingSubmitted ? (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">
-                <div className="flex items-center gap-2 font-medium mb-2">
-                  <CheckCircle className="h-5 w-5" />
-                  Merci pour votre évaluation !
-                </div>
-                <div className="flex items-center gap-1 mb-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-5 w-5 ${i < userRating ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}`}
-                    />
-                  ))}
-                </div>
-                {userComment && <div className="bg-white rounded p-3 text-gray-700 italic">"{userComment}"</div>}
+        {/* Votre évaluation précédente */}
+        {userReview && (
+          <div className="p-6 border-t">
+            <h2 className="text-xl font-semibold mb-4">Votre évaluation</h2>
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center gap-1 mb-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-5 w-5 ${
+                      i < userReview.rating
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                  />
+                ))}
+                <span className="ml-2 text-sm text-gray-600">
+                  {new Date(userReview.createdAt).toLocaleDateString()}
+                </span>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Noter votre conducteur</label>
-                  <div className="flex items-center gap-1">
+              {userReview.comment && (
+                <p className="text-gray-700 italic">"{userReview.comment}"</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Section d'évaluation */}
+        {!userReview && (
+          <div className="p-6 bg-gray-50 border-t">
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold">Évaluer votre trajet</h2>
+
+              {ratingSubmitted ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">
+                  <div className="flex items-center gap-2 font-medium mb-2">
+                    <CheckCircle className="h-5 w-5" />
+                    Merci pour votre évaluation !
+                  </div>
+                  <div className="flex items-center gap-1 mb-3">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <button
+                      <Star
                         key={i}
-                        type="button"
-                        onClick={() => setUserRating(i + 1)}
-                        className="focus:outline-none"
-                      >
-                        <Star
-                          className={`h-8 w-8 transition-all ${
-                            i < userRating
-                              ? "text-yellow-400 fill-yellow-400"
-                              : "text-gray-300 hover:text-yellow-200"
-                          }`}
-                        />
-                      </button>
+                        className={`h-5 w-5 ${
+                          i < userRating
+                            ? "text-yellow-500 fill-yellow-500"
+                            : "text-gray-300"
+                        }`}
+                      />
                     ))}
                   </div>
-                </div>
-
-                <div>
-                  <label htmlFor="comment" className="block text-sm font-medium mb-2">
-                    Laisser un commentaire (optionnel)
-                  </label>
-                  <textarea
-                    id="comment"
-                    placeholder="Partagez votre expérience avec ce conducteur..."
-                    value={userComment}
-                    onChange={(e) => setUserComment(e.target.value)}
-                    className="w-full min-h-[100px] p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    rows={4}
-                  />
-                </div>
-
-                <button
-                  onClick={handleRatingSubmit}
-                  disabled={!userRating || isSubmitting}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-                      Envoi en cours...
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <Send className="h-4 w-4" />
-                      Envoyer mon évaluation
-                    </span>
+                  {userComment && (
+                    <div className="bg-white rounded p-3 text-gray-700 italic">
+                      "{userComment}"
+                    </div>
                   )}
-                </button>
-              </div>
-            )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Noter votre conducteur
+                    </label>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setUserRating(i + 1)}
+                          className="focus:outline-none"
+                        >
+                          <Star
+                            className={`h-8 w-8 transition-all ${
+                              i < userRating
+                                ? "text-yellow-400 fill-yellow-400"
+                                : "text-gray-300 hover:text-yellow-200"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="comment"
+                      className="block text-sm font-medium mb-2"
+                    >
+                      Laisser un commentaire (optionnel)
+                    </label>
+                    <textarea
+                      id="comment"
+                      placeholder="Partagez votre expérience avec ce conducteur..."
+                      value={userComment}
+                      onChange={(e) => setUserComment(e.target.value)}
+                      className="w-full min-h-[100px] p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      rows={4}
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleRatingSubmit}
+                    disabled={!userRating || isSubmitting}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                        Envoi en cours...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <Send className="h-4 w-4" />
+                        Envoyer mon évaluation
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
-} 
+}
