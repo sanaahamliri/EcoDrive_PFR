@@ -49,7 +49,6 @@ exports.createReview = asyncHandler(async (req, res, next) => {
   // Créer la review
   const review = await Review.create({
     rating: req.body.rating,
-    comment: req.body.comment,
     ride: req.body.ride,
     reviewer: req.user.id,
     reviewedUser: wasPassenger ? ride.driver : ride.passengers[0].user,
@@ -141,7 +140,7 @@ exports.updateReview = asyncHandler(async (req, res, next) => {
 
   review = await Review.findByIdAndUpdate(
     req.params.id,
-    { rating: req.body.rating, comment: req.body.comment },
+    { rating: req.body.rating },
     { new: true, runValidators: true }
   );
 

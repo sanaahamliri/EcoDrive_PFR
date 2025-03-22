@@ -29,7 +29,6 @@ export default function TripDetails() {
 
   useEffect(() => {
     loadTripDetails();
-    loadReviews();
   }, [id]);
 
   const loadTripDetails = async () => {
@@ -38,10 +37,18 @@ export default function TripDetails() {
       const response = await TripService.getTripDetails(id);
       setTrip(response.data);
 
-      if (response.data.review) {
-        setUserRating(response.data.review.rating);
-        setUserComment(response.data.review.comment || "");
-        setRatingSubmitted(true);
+      try {
+        const reviewsResponse = await TripService.getReviews(id);
+        const userReview = reviewsResponse.data.userReview;
+        setReviews(reviewsResponse.data.reviews);
+
+        if (userReview) {
+          setUserRating(userReview.rating);
+          setRatingSubmitted(true);
+          setUserReview(userReview);
+        }
+      } catch (reviewError) {
+        console.error("Error loading reviews:", reviewError);
       }
     } catch (err) {
       toast.error("Erreur lors du chargement des détails du trajet", {
@@ -51,16 +58,6 @@ export default function TripDetails() {
       console.error("Error loading trip details:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadReviews = async () => {
-    try {
-      const response = await axios.get(`/api/v1/reviews/trip/${id}`);
-      setReviews(response.data.data.reviews);
-      setUserReview(response.data.data.userReview);
-    } catch (error) {
-      console.error("Error loading reviews:", error);
     }
   };
 
@@ -78,7 +75,7 @@ export default function TripDetails() {
 
     try {
       setIsSubmitting(true);
-      await TripService.rateTrip(trip._id, userRating, userComment);
+      await TripService.rateTrip(trip._id, userRating);
       setRatingSubmitted(true);
       toast.success("Votre évaluation a été enregistrée avec succès !", {
         position: "top-right",
@@ -292,16 +289,14 @@ export default function TripDetails() {
                       <Star
                         key={i}
                         className={`h-4 w-4 ${
-                          i < Math.floor(trip.driver.rating)
+                          i < Math.floor(trip.driver.stats?.rating || 0)
                             ? "text-yellow-400 fill-yellow-400"
-                            : i < trip.driver.rating
-                            ? "text-yellow-400 fill-yellow-400 opacity-50"
                             : "text-gray-300"
                         }`}
                       />
                     ))}
                     <span className="ml-2 text-sm font-medium">
-                      {trip.driver.rating}
+                      {trip.driver.stats?.rating || "Pas encore noté"}
                     </span>
                   </div>
                 </div>
@@ -351,7 +346,6 @@ export default function TripDetails() {
           </div>
         </div>
 
-        {/* Votre évaluation précédente */}
         {userReview && (
           <div className="p-6 border-t">
             <h2 className="text-xl font-semibold mb-4">Votre évaluation</h2>
@@ -378,8 +372,7 @@ export default function TripDetails() {
           </div>
         )}
 
-        {/* Section d'évaluation */}
-        {!userReview && (
+        {!userReview ? (
           <div className="p-6 bg-gray-50 border-t">
             <div className="space-y-6">
               <h2 className="text-xl font-semibold">Évaluer votre trajet</h2>
@@ -402,11 +395,6 @@ export default function TripDetails() {
                       />
                     ))}
                   </div>
-                  {userComment && (
-                    <div className="bg-white rounded p-3 text-gray-700 italic">
-                      "{userComment}"
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -434,23 +422,6 @@ export default function TripDetails() {
                     </div>
                   </div>
 
-                  <div>
-                    <label
-                      htmlFor="comment"
-                      className="block text-sm font-medium mb-2"
-                    >
-                      Laisser un commentaire (optionnel)
-                    </label>
-                    <textarea
-                      id="comment"
-                      placeholder="Partagez votre expérience avec ce conducteur..."
-                      value={userComment}
-                      onChange={(e) => setUserComment(e.target.value)}
-                      className="w-full min-h-[100px] p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      rows={4}
-                    />
-                  </div>
-
                   <button
                     onClick={handleRatingSubmit}
                     disabled={!userRating || isSubmitting}
@@ -470,6 +441,31 @@ export default function TripDetails() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 bg-gray-50 border-t">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
+              <div className="flex items-center gap-2 font-medium mb-2">
+                <CheckCircle className="h-5 w-5" />
+                Vous avez déjà évalué ce trajet
+              </div>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-5 w-5 ${
+                      i < userReview.rating
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                  />
+                ))}
+                <span className="ml-2 text-sm">
+                  Note donnée le{" "}
+                  {new Date(userReview.createdAt).toLocaleDateString()}
+                </span>
+              </div>
             </div>
           </div>
         )}

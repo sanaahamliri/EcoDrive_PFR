@@ -13,7 +13,6 @@ class TripService {
       params.append("page", page);
       params.append("limit", 5);
 
-      // Garder uniquement les filtres de base
       if (filters.from?.trim()) {
         params.append("from", filters.from.trim());
       }
@@ -114,21 +113,27 @@ class TripService {
   }
 
   async getTripDetails(rideId) {
-    const response = await axios.get(`${API_URL}/rides/${rideId}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-    return response.data;
+    try {
+      const response = await axios.get(`${API_URL}/rides/${rideId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+  
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
-  async rateTrip(tripId, rating, comment) {
+  async rateTrip(tripId, rating) {
     try {
       const response = await axios.post(
         `${API_URL}/rides/${tripId}/rate`,
         {
           rating,
-          comment,
         },
         {
           headers: {
@@ -142,8 +147,17 @@ class TripService {
     }
   }
 
-  static getReviews(tripId) {
-    return axios.get(`/api/v1/trips/${tripId}/reviews`);
+  async getReviews(tripId) {
+    try {
+      const response = await axios.get(`${API_URL}/reviews/trip/${tripId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   handleError(error) {
