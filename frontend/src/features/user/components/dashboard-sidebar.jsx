@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import UserService from "../services/userService";
 import { toast } from "react-toastify";
 import { API_URL } from "../../../config/constants";
+import AuthService from "../../../services/authService";
+import { useNavigate } from "react-router-dom";
 
 const getBackgroundColor = (name) => {
   const colors = [
@@ -25,6 +27,7 @@ export default function DashboardSidebar({
   setSidebarOpen,
 }) {
   const [userData, setUserData] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -91,6 +94,15 @@ export default function DashboardSidebar({
 
   const isDefaultAvatar = (avatar) => {
     return !avatar || avatar === "default-avatar.jpg";
+  };
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+      navigate("/login");
+    } catch (error) {
+      toast.error("Erreur lors de la déconnexion");
+    }
   };
 
   return (
@@ -238,7 +250,10 @@ export default function DashboardSidebar({
             )}
           </div>
           {sidebarOpen && (
-            <button className="mt-4 flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100">
+            <button
+              onClick={handleLogout}
+              className="mt-4 flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 mr-3"
