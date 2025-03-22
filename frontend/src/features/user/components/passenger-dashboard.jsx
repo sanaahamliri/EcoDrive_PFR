@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import DashboardSidebar from "./dashboard-sidebar"
 import DashboardContent from "./dashboard-content"

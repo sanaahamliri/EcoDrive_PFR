@@ -1,4 +1,4 @@
-import api from "../config/axios";
+import api from "./api/axiosConfig";
 import { API_ENDPOINTS } from "../config/api";
 
 class AuthService {
@@ -20,6 +20,13 @@ class AuthService {
 
   static async login(email, password) {
     try {
+      console.log("Base URL:", api.defaults.baseURL);
+      console.log("Login endpoint:", API_ENDPOINTS.AUTH.LOGIN);
+      console.log(
+        "Full URL:",
+        `${api.defaults.baseURL}${API_ENDPOINTS.AUTH.LOGIN}`
+      );
+
       const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, {
         email,
         password,
@@ -30,7 +37,16 @@ class AuthService {
       }
       return response.data;
     } catch (error) {
-      throw error.message || "Erreur lors de la connexion";
+      console.error("Login error details:", {
+        message: error.message,
+        response: error.response,
+        config: error.config,
+      });
+      throw (
+        error.response?.data?.message ||
+        error.message ||
+        "Erreur lors de la connexion"
+      );
     }
   }
 

@@ -8,8 +8,8 @@ const cookieParser = require("cookie-parser");
 const fileUpload = require("express-fileupload");
 const path = require("path");
 const errorHandler = require("./middlewares/error");
+const fs = require("fs");
 
-// Load env vars
 dotenv.config();
 console.log(process.env.MONGODB_URI);
 // Connect to MongoDB
@@ -20,18 +20,44 @@ mongoose
 
 const app = express();
 
-// Body parser
+app.use(
+  fileUpload({
+    createParentPath: true,
+    limits: {
+      fileSize: 5 * 1024 * 1024,
+    },
+    useTempFiles: false,
+    abortOnLimit: true,
+    debug: true,
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Cookie parser
 app.use(cookieParser());
 
-// File upload
-app.use(fileUpload());
+// Configuration CORS détaillée
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:3001"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["Content-Disposition"],
+  })
+);
 
-// Set static folder
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Route de test pour vérifier l'accès aux fichiers
+app.get("/api/check-file/:filename", (req, res) => {
+  const filePath = path.join(__dirname, "../uploads", req.params.filename);
+  if (fs.existsSync(filePath)) {
+    res.json({ exists: true, path: filePath });
+  } else {
+    res.json({ exists: false, path: filePath });
+  }
+});
 
 // Dev logging middleware
 if (process.env.NODE_ENV === "development") {
@@ -41,19 +67,20 @@ if (process.env.NODE_ENV === "development") {
 // Security headers
 app.use(helmet());
 
-// Configuration CORS plus détaillée
-app.use(
-  cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
 // Ajoutez ce middleware de logging pour déboguer les requêtes
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// Middleware de logging pour les requêtes de fichiers
+app.use("/uploads", (req, res, next) => {
+  console.log("File request:", {
+    url: req.url,
+    method: req.method,
+    headers: req.headers,
+    path: path.join(__dirname, "../uploads", req.url),
+  });
   next();
 });
 

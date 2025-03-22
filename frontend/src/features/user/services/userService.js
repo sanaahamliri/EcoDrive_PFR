@@ -1,65 +1,94 @@
-import axiosInstance from "../../../config/axios";
+import api from "../../../config/axios";
+import { API_URL } from "../../../config/constants";
 
 class UserService {
-  async getProfile() {
+  static async getProfile() {
     try {
-      const response = await axiosInstance.get("/users/me");
+      const response = await api.get("/api/v1/users/me");
+      console.log("API Response in service:", response);
       return response;
     } catch (error) {
-      throw this.handleError(error);
+      console.error("API Error in service:", error);
+      throw error;
     }
   }
 
-  async updateProfile(userData) {
+  static async updateProfile(userData) {
     try {
-      const response = await axiosInstance.put("/users/me", userData);
+      // Log des données avant envoi
+      console.log("Données envoyées au serveur:", userData);
+
+      const response = await api.put("/api/v1/users/me", userData);
       return response;
     } catch (error) {
-      throw this.handleError(error);
+      console.error("Update profile error details:", {
+        data: error.response?.data,
+        status: error.response?.status,
+        message: error.response?.data?.message,
+      });
+      throw error;
     }
   }
 
-  async updatePreferences(preferences) {
+  static cleanProfileData(data) {
+    const cleaned = { ...data };
+
+    Object.keys(cleaned).forEach((key) => {
+      if (cleaned[key] === undefined || cleaned[key] === "") {
+        delete cleaned[key];
+      }
+    });
+
+    const requiredFields = ["firstName", "lastName", "email"];
+    requiredFields.forEach((field) => {
+      if (!cleaned[field]) {
+        console.warn(`Missing required field: ${field}`);
+      }
+    });
+
+    return cleaned;
+  }
+
+  static async updatePreferences(preferences) {
     try {
-      const response = await axiosInstance.put(
-        "/users/me/preferences",
-        preferences
-      );
+      const response = await api.put("/api/users/preferences", preferences);
       return response;
     } catch (error) {
-      throw this.handleError(error);
+      throw error;
     }
   }
 
-  async uploadProfilePhoto(file) {
+  static async uploadProfilePhoto(formData) {
     try {
-      const formData = new FormData();
-      formData.append("photo", file);
+      console.log("Uploading photo with formData:", {
+        hasData: !!formData,
+        isFormData: formData instanceof FormData,
+      });
 
-      const response = await axiosInstance.put("/users/me/photo", formData, {
+      const response = await api.put("/api/v1/users/me/photo", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      console.log("Upload response in service:", response);
       return response;
     } catch (error) {
-      throw this.handleError(error);
+      console.error("Upload error in service:", error);
+      throw error;
     }
   }
 
   handleError(error) {
     if (error.response) {
-      // Le serveur a répondu avec un status code hors de la plage 2xx
       const message = error.response.data.message || "Une erreur est survenue";
       throw new Error(message);
     } else if (error.request) {
-      // La requête a été faite mais aucune réponse n'a été reçue
       throw new Error("Impossible de contacter le serveur");
     } else {
-      // Une erreur s'est produite lors de la configuration de la requête
       throw new Error("Erreur de configuration de la requête");
     }
   }
 }
 
-export default new UserService();
+export default UserService;

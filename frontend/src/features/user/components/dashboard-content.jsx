@@ -1,8 +1,6 @@
-"use client"
 import DashboardOverview from "./dashboard-overview"
 import TripHistory from "./trip-history"
 import UserProfile from "./user-profile"
-import NotificationsPanel from "./notifications-panel"
 import MyTrips from "./my-trips"
 
 export default function DashboardContent({ activeView }) {
@@ -13,7 +11,6 @@ export default function DashboardContent({ activeView }) {
         {activeView === "trips" && <MyTrips />}
         {activeView === "history" && <TripHistory />}
         {activeView === "profile" && <UserProfile />}
-        {activeView === "notifications" && <NotificationsPanel />}
       </div>
     </main>
   )

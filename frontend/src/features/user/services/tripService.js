@@ -13,6 +13,7 @@ class TripService {
       params.append("page", page);
       params.append("limit", 5);
 
+      // Garder uniquement les filtres de base
       if (filters.from?.trim()) {
         params.append("from", filters.from.trim());
       }
@@ -27,48 +28,6 @@ class TripService {
       }
       if (filters.seats) {
         params.append("seats", filters.seats);
-      }
-      if (filters.maxPrice) {
-        params.append("maxPrice", filters.maxPrice);
-      }
-
-      // Préférences
-      if (filters.preferences?.length > 0) {
-        const preferencesMap = {
-          "non-fumeur": "smoking",
-          musique: "music",
-          animaux: "pets",
-        };
-
-        const apiPreferences = [];
-
-        filters.preferences.forEach((pref) => {
-          if (preferencesMap[pref]) {
-            const apiPrefName = preferencesMap[pref];
-            const value = pref === "non-fumeur" ? "false" : "true";
-            params.append(`preferences.${apiPrefName}`, value);
-          }
-        });
-      }
-
-      // Heure de départ
-      if (filters.departureTime) {
-        const timeRanges = {
-          morning: { start: "06:00", end: "12:00" },
-          afternoon: { start: "12:00", end: "18:00" },
-          evening: { start: "18:00", end: "00:00" },
-        };
-
-        if (timeRanges[filters.departureTime]) {
-          const range = timeRanges[filters.departureTime];
-          params.append("departureTimeStart", range.start);
-          params.append("departureTimeEnd", range.end);
-        }
-      }
-
-      // Note conducteur
-      if (filters.driverRating) {
-        params.append("driverRating", filters.driverRating);
       }
 
       console.log("Searching with filters:", Object.fromEntries(params));

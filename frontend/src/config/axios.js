@@ -1,15 +1,14 @@
 import axios from "axios";
-import { API_URL } from "./api";
 
-const axiosInstance = axios.create({
-  baseURL: `${API_URL}/api/v1`,
-  withCredentials: true,
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000",
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
-axiosInstance.interceptors.request.use(
+api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -22,7 +21,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-axiosInstance.interceptors.response.use(
+api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
@@ -33,4 +32,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance;
+export default api;

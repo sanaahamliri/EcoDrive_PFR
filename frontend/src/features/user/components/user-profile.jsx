@@ -1,15 +1,35 @@
-"use client";
 
 import React from "react";
 import UserService from "../services/userService";
 import { toast } from "react-toastify";
+import { API_URL } from "../../../config/constants";
+import Avatar from "../../../components/Avatar";
+import * as Yup from "yup";
+import { Formik, Field } from "formik";
+
+const ProfileValidationSchema = Yup.object().shape({
+  firstName: Yup.string()
+    .required("Le prénom est requis")
+    .min(2, "Le prénom doit contenir au moins 2 caractères")
+    .max(50, "Le prénom ne peut pas dépasser 50 caractères"),
+  lastName: Yup.string()
+    .required("Le nom est requis")
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(50, "Le nom ne peut pas dépasser 50 caractères"),
+  email: Yup.string()
+    .required("L'email est requis")
+    .email("Format d'email invalide"),
+  phone: Yup.string()
+    .nullable()
+    .matches(/^[0-9+\s-]*$/, "Format de téléphone invalide"),
+});
 
 class UserProfile extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       activeTab: "personal",
-      userData: null,
+      userData: {},
       loading: true,
       preferences: {
         language: "fr",
@@ -24,38 +44,61 @@ class UserProfile extends React.Component {
           conversation: "moderate",
         },
       },
+      selectedImage: null,
+      imagePreview: null,
     };
+
+    this.fileInputRef = React.createRef();
+
+    this.DEFAULT_AVATAR = "/images/default-avatar.png";
   }
 
   async componentDidMount() {
-    try {
-      const response = await UserService.getProfile();
-      this.setState({
-        userData: response.data,
-        loading: false,
-      });
-    } catch (error) {
-      toast.error("Erreur lors du chargement du profil");
-      console.error("Error loading profile:", error);
-    }
+    console.log("Component mounting...");
+    this.loadUserProfile();
   }
 
-  handleProfileUpdate = async (event) => {
-    event.preventDefault();
-    try {
-      const userData = {
-        firstName: this.state.userData.firstName,
-        lastName: this.state.userData.lastName,
-        phoneNumber: this.state.userData.phoneNumber,
-        email: this.state.userData.email,
+  handleImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      this.setState({ selectedImage: file });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        this.setState({ imagePreview: reader.result });
       };
+      reader.readAsDataURL(file);
+    }
+  };
 
-      const response = await UserService.updateProfile(userData);
-      this.setState({ userData: response.data });
+  handleProfileUpdate = async (values) => {
+    try {
+      const { selectedImage } = this.state;
+
+      console.log("Valeurs à envoyer:", values);
+
+      const profileResponse = await UserService.updateProfile(values);
+      console.log("Réponse mise à jour profil:", profileResponse);
+
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append("photo", selectedImage);
+
+        const photoResponse = await UserService.uploadProfilePhoto(formData);
+        console.log("Réponse upload photo:", photoResponse);
+      }
+
+      await this.loadUserProfile();
+
       toast.success("Profil mis à jour avec succès");
     } catch (error) {
-      toast.error("Erreur lors de la mise à jour du profil");
-      console.error("Error updating profile:", error);
+      console.error("Erreur de mise à jour:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+
+      const errorMessage = error.response?.data?.message || error.message;
+      toast.error(`Erreur: ${errorMessage}`);
     }
   };
 
@@ -87,8 +130,96 @@ class UserProfile extends React.Component {
     this.setState({ activeTab: tab });
   };
 
+  getInitials(firstName, lastName) {
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : "";
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : "";
+    return `${firstInitial}${lastInitial}`;
+  }
+
+  getAvatarColor(name) {
+    const colors = [
+      "bg-blue-600",
+      "bg-green-600",
+      "bg-purple-600",
+      "bg-pink-600",
+      "bg-yellow-600",
+      "bg-red-600",
+      "bg-indigo-600",
+    ];
+
+    if (!name) return colors[0];
+
+    const charCodes = name.split("").map((char) => char.charCodeAt(0));
+    const sum = charCodes.reduce((acc, curr) => acc + curr, 0);
+    return colors[sum % colors.length];
+  }
+
+  isDefaultAvatar(avatar) {
+    return !avatar;
+  }
+
+  checkUploads = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/users/check-uploads`);
+      const data = await response.json();
+      console.log("Uploads check:", data);
+    } catch (error) {
+      console.error("Error checking uploads:", error);
+    }
+  };
+
+  handlePhotoUpload = async (event) => {
+    try {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      console.log("File to upload:", {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        lastModified: file.lastModified,
+      });
+
+      const formData = new FormData();
+      formData.append("photo", file);
+
+      toast.info("Upload en cours...");
+
+      const response = await UserService.uploadProfilePhoto(formData);
+      console.log("Upload response in component:", response);
+
+      if (response.data.success) {
+        console.log("New avatar URL:", response.data.data.avatarUrl);
+
+        this.setState(
+          (prevState) => ({
+            userData: {
+              ...prevState.userData,
+              avatarUrl: response.data.data.avatarUrl,
+            },
+          }),
+          () => {
+            console.log("State updated:", {
+              newAvatarUrl: this.state.userData.avatarUrl,
+            });
+          }
+        );
+
+        toast.success("Photo de profil mise à jour avec succès");
+      }
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Erreur lors du téléchargement de la photo"
+      );
+    }
+  };
+
   render() {
-    const { userData, loading } = this.state;
+    const { userData, loading, imagePreview } = this.state;
+
+    console.log("Current userData in render:", userData); // Debug log
 
     if (loading) {
       return (
@@ -151,15 +282,25 @@ class UserProfile extends React.Component {
                   <div className="h-24 w-24 rounded-full overflow-hidden">
                     <img
                       src={
-                        userData?.avatar
-                          ? `/uploads/${userData.avatar}`
-                          : "https://randomuser.me/api/portraits/men/42.jpg"
+                        imagePreview ||
+                        userData.avatarUrl ||
+                        "/images/default-avatar.png"
                       }
-                      alt={userData?.firstName}
-                      className="h-full w-full object-cover"
+                      alt="Profile"
+                      className="profile-avatar h-full w-full object-cover"
                     />
                   </div>
-                  <button className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full border border-gray-300 bg-white p-1 shadow-sm hover:bg-gray-50">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={this.handleImageSelect}
+                    style={{ display: "none" }}
+                    ref={this.fileInputRef}
+                  />
+                  <button
+                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full border border-gray-300 bg-white p-1 shadow-sm hover:bg-gray-50"
+                    onClick={() => this.fileInputRef.current.click()}
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-full w-full text-gray-600"
@@ -197,128 +338,11 @@ class UserProfile extends React.Component {
                     })}
                   </p>
                 </div>
-
-                <div className="flex items-center space-x-1">
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <svg
-                        key={star}
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className={`h-4 w-4 ${
-                          star <= (userData?.stats?.rating || 0)
-                            ? "text-green-600"
-                            : "text-gray-300"
-                        }`}
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <span className="text-sm font-medium">
-                    {userData?.stats?.rating?.toFixed(1) || "0.0"}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    ({userData?.stats?.numberOfRatings || 0} avis)
-                  </span>
-                </div>
-
-                <div className="w-full space-y-2 pt-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Trajets effectués</span>
-                    <span className="font-medium">
-                      {userData?.stats?.totalTrips || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Distance totale</span>
-                    <span className="font-medium">
-                      {userData?.stats?.totalDistance || 0} km
-                    </span>
-                  </div>
-                </div>
-
-                <div className="w-full space-y-2 pt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className={`h-4 w-4 ${
-                          userData?.isVerified
-                            ? "text-green-600"
-                            : "text-gray-400"
-                        }`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                        />
-                      </svg>
-                      <span className="text-sm">Profil vérifié</span>
-                    </div>
-                    <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                      <input
-                        type="checkbox"
-                        id="profile-verified"
-                        className="sr-only"
-                        checked={userData?.isVerified}
-                        readOnly
-                      />
-                      <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
-                      <div
-                        className={`dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition ${
-                          userData?.isVerified ? "translate-x-4" : ""
-                        }`}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => this.setActiveTab("personal")}
-                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                    this.state.activeTab === "personal"
-                      ? "border-green-500 text-green-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  Informations
-                </button>
-                <button
-                  onClick={() => this.setActiveTab("preferences")}
-                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                    this.state.activeTab === "preferences"
-                      ? "border-green-500 text-green-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  Préférences
-                </button>
-                <button
-                  onClick={() => this.setActiveTab("payment")}
-                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                    this.state.activeTab === "payment"
-                      ? "border-green-500 text-green-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  Paiement
-                </button>
-              </nav>
-            </div>
-
             <div className="pt-4">
               {this.state.activeTab === "personal" && (
                 <div className="rounded-lg bg-white shadow">
@@ -331,221 +355,198 @@ class UserProfile extends React.Component {
                     </p>
                   </div>
                   <div className="p-6 space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <label
-                          htmlFor="firstName"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Prénom
-                        </label>
-                        <div className="relative">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="absolute left-3 top-3 h-4 w-4 text-gray-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                          <input
-                            id="firstName"
-                            type="text"
-                            placeholder="Prénom"
-                            value={userData?.firstName || ""}
-                            onChange={(e) =>
-                              this.handleInputChange(
-                                "firstName",
-                                e.target.value
-                              )
-                            }
-                            className="w-full rounded-md border border-gray-300 pl-9 py-2"
-                          />
-                        </div>
-                      </div>
+                    <Formik
+                      initialValues={{
+                        firstName: userData.firstName || "",
+                        lastName: userData.lastName || "",
+                        email: userData.email || "",
+                        phoneNumber: userData.phoneNumber || "",
+                      }}
+                      validationSchema={ProfileValidationSchema}
+                      onSubmit={this.handleProfileUpdate}
+                    >
+                      {({ errors, touched, handleSubmit, isSubmitting }) => (
+                        <form onSubmit={handleSubmit}>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <label
+                                htmlFor="firstName"
+                                className="block text-sm font-medium text-gray-700"
+                              >
+                                Prénom
+                              </label>
+                              <div className="relative">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="absolute left-3 top-3 h-4 w-4 text-gray-400"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                  />
+                                </svg>
+                                <Field
+                                  id="firstName"
+                                  name="firstName"
+                                  type="text"
+                                  placeholder="Prénom"
+                                  className={`w-full rounded-md border ${
+                                    errors.firstName && touched.firstName
+                                      ? "border-red-500"
+                                      : "border-gray-300"
+                                  } pl-9 py-2`}
+                                />
+                              </div>
+                              {errors.firstName && touched.firstName && (
+                                <div className="text-red-500 text-sm mt-1">
+                                  {errors.firstName}
+                                </div>
+                              )}
+                            </div>
 
-                      <div className="space-y-2">
-                        <label
-                          htmlFor="lastName"
-                          className="block text-sm font-medium text-gray-700"
-                        >
-                          Nom
-                        </label>
-                        <div className="relative">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="absolute left-3 top-3 h-4 w-4 text-gray-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                          <input
-                            id="lastName"
-                            type="text"
-                            placeholder="Nom"
-                            value={userData?.lastName || ""}
-                            onChange={(e) =>
-                              this.handleInputChange("lastName", e.target.value)
-                            }
-                            className="w-full rounded-md border border-gray-300 pl-9 py-2"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                            <div className="space-y-2">
+                              <label
+                                htmlFor="lastName"
+                                className="block text-sm font-medium text-gray-700"
+                              >
+                                Nom
+                              </label>
+                              <div className="relative">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="absolute left-3 top-3 h-4 w-4 text-gray-400"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                  />
+                                </svg>
+                                <Field
+                                  id="lastName"
+                                  name="lastName"
+                                  type="text"
+                                  placeholder="Nom"
+                                  className={`w-full rounded-md border ${
+                                    errors.lastName && touched.lastName
+                                      ? "border-red-500"
+                                      : "border-gray-300"
+                                  } pl-9 py-2`}
+                                />
+                              </div>
+                              {errors.lastName && touched.lastName && (
+                                <div className="text-red-500 text-sm mt-1">
+                                  {errors.lastName}
+                                </div>
+                              )}
+                            </div>
+                          </div>
 
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Email
-                      </label>
-                      <div className="relative">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="absolute left-3 top-3 h-4 w-4 text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                          />
-                        </svg>
-                        <input
-                          id="email"
-                          type="email"
-                          placeholder="Email"
-                          value={userData?.email || ""}
-                          onChange={(e) =>
-                            this.handleInputChange("email", e.target.value)
-                          }
-                          className="w-full rounded-md border border-gray-300 pl-9 py-2"
-                        />
-                      </div>
-                    </div>
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="email"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Email
+                            </label>
+                            <div className="relative">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="absolute left-3 top-3 h-4 w-4 text-gray-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                />
+                              </svg>
+                              <Field
+                                id="email"
+                                name="email"
+                                type="email"
+                                placeholder="Email"
+                                className={`w-full rounded-md border ${
+                                  errors.email && touched.email
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                } pl-9 py-2`}
+                              />
+                            </div>
+                            {errors.email && touched.email && (
+                              <div className="text-red-500 text-sm mt-1">
+                                {errors.email}
+                              </div>
+                            )}
+                          </div>
 
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="phone"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Téléphone
-                      </label>
-                      <div className="relative">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="absolute left-3 top-3 h-4 w-4 text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                          />
-                        </svg>
-                        <input
-                          id="phone"
-                          type="text"
-                          placeholder="Téléphone"
-                          value={userData?.phoneNumber || ""}
-                          onChange={(e) =>
-                            this.handleInputChange(
-                              "phoneNumber",
-                              e.target.value
-                            )
-                          }
-                          className="w-full rounded-md border border-gray-300 pl-9 py-2"
-                        />
-                      </div>
-                    </div>
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="phoneNumber"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Téléphone
+                            </label>
+                            <div className="relative">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="absolute left-3 top-3 h-4 w-4 text-gray-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                                />
+                              </svg>
+                              <Field
+                                id="phoneNumber"
+                                name="phoneNumber"
+                                type="text"
+                                placeholder="Téléphone"
+                                className={`w-full rounded-md border ${
+                                  errors.phoneNumber && touched.phoneNumber
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                } pl-9 py-2`}
+                              />
+                            </div>
+                            {errors.phoneNumber && touched.phoneNumber && (
+                              <div className="text-red-500 text-sm mt-1">
+                                {errors.phoneNumber}
+                              </div>
+                            )}
+                          </div>
 
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="address"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Adresse
-                      </label>
-                      <div className="relative">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="absolute left-3 top-3 h-4 w-4 text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        <input
-                          id="address"
-                          type="text"
-                          placeholder="Adresse"
-                          value={userData?.address || ""}
-                          onChange={(e) =>
-                            this.handleInputChange("address", e.target.value)
-                          }
-                          className="w-full rounded-md border border-gray-300 pl-9 py-2"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label
-                        htmlFor="bio"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Bio
-                      </label>
-                      <textarea
-                        id="bio"
-                        placeholder="Parlez-nous de vous..."
-                        value={userData?.bio || ""}
-                        onChange={(e) =>
-                          this.handleInputChange("bio", e.target.value)
-                        }
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 min-h-[100px]"
-                      />
-                    </div>
-
-                    <div className="pt-4">
-                      <button
-                        onClick={this.handleProfileUpdate}
-                        className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
-                      >
-                        Enregistrer les modifications
-                      </button>
-                    </div>
+                          <div className="pt-4">
+                            <button
+                              type="submit"
+                              className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting
+                                ? "Mise à jour..."
+                                : "Mettre à jour"}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </Formik>
                   </div>
                 </div>
               )}
@@ -690,6 +691,20 @@ class UserProfile extends React.Component {
     );
   }
 
+  renderAvatar() {
+    const { userData } = this.state;
+
+    return (
+      <div className="avatar-container">
+        <Avatar
+          src={userData?.avatarUrl}
+          size={150}
+          className="profile-avatar"
+        />
+      </div>
+    );
+  }
+
   getPreferenceLabel(key) {
     const labels = {
       smoking: "Non-fumeur",
@@ -728,6 +743,28 @@ class UserProfile extends React.Component {
         [preference]: value,
       },
     }));
+  };
+
+  loadUserProfile = async () => {
+    try {
+      console.log("Loading user profile...");
+      const response = await UserService.getProfile();
+      console.log("Profile loaded:", response.data);
+
+      this.setState(
+        {
+          userData: response.data.data,
+          loading: false,
+        },
+        () => {
+          console.log("State updated with profile:", this.state.userData);
+        }
+      );
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      this.setState({ loading: false });
+      toast.error("Erreur lors du chargement du profil");
+    }
   };
 }
 

@@ -1,7 +1,22 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import UserService from "../services/userService";
+import { toast } from "react-toastify";
+import { API_URL } from "../../../config/constants";
+
+const getBackgroundColor = (name) => {
+  const colors = [
+    "bg-blue-600",
+    "bg-green-600",
+    "bg-purple-600",
+    "bg-yellow-600",
+    "bg-red-600",
+    "bg-indigo-600",
+  ];
+  const index =
+    name?.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+    colors.length;
+  return colors[index];
+};
 
 export default function DashboardSidebar({
   activeView,
@@ -15,9 +30,11 @@ export default function DashboardSidebar({
     const loadUserData = async () => {
       try {
         const response = await UserService.getProfile();
-        setUserData(response.data);
+        console.log("Sidebar user data:", response); // Pour debug
+        setUserData(response.data.data);
       } catch (error) {
         console.error("Error loading user data:", error);
+        toast.error("Erreur lors du chargement des données utilisateur");
       }
     };
 
@@ -42,17 +59,39 @@ export default function DashboardSidebar({
     },
 
     {
-      id: "notifications",
-      label: "Notifications",
-      icon: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
-      badge: 5,
-    },
-    {
       id: "profile",
       label: "Profil",
       icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
     },
   ];
+
+  const getInitials = (firstName, lastName) => {
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : "";
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : "";
+    return `${firstInitial}${lastInitial}`;
+  };
+
+  const getAvatarColor = (name) => {
+    const colors = [
+      "bg-blue-600",
+      "bg-green-600",
+      "bg-purple-600",
+      "bg-pink-600",
+      "bg-yellow-600",
+      "bg-red-600",
+      "bg-indigo-600",
+    ];
+
+    if (!name) return colors[0];
+
+    const charCodes = name.split("").map((char) => char.charCodeAt(0));
+    const sum = charCodes.reduce((acc, curr) => acc + curr, 0);
+    return colors[sum % colors.length];
+  };
+
+  const isDefaultAvatar = (avatar) => {
+    return !avatar || avatar === "default-avatar.jpg";
+  };
 
   return (
     <div
@@ -83,7 +122,7 @@ export default function DashboardSidebar({
                 </svg>
               </div>
               {sidebarOpen && (
-                <div className="font-semibold text-lg">RideShare</div>
+                <div className="font-semibold text-lg">EcoDrive</div>
               )}
             </div>
             <button
@@ -152,25 +191,50 @@ export default function DashboardSidebar({
         {/* Footer */}
         <div className="border-t border-gray-200 pt-2 px-3 py-4">
           <div className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-gray-200 overflow-hidden">
-              <img
-                src={
-                  userData?.avatar
-                    ? `/uploads/${userData.avatar}`
-                    : "https://randomuser.me/api/portraits/men/42.jpg"
-                }
-                alt={userData?.firstName || "User"}
-              />
+            <div className="h-8 w-8 rounded-full overflow-hidden">
+              {userData?.avatarUrl ? (
+                <img
+                  src={userData.avatarUrl}
+                  alt={userData?.firstName}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    console.log("Image load error:", {
+                      attempted: userData.avatarUrl,
+                    });
+                    e.target.onerror = null;
+                    setUserData((prev) => ({
+                      ...prev,
+                      avatarUrl: null,
+                    }));
+                  }}
+                />
+              ) : (
+                <div
+                  className={`h-full w-full flex items-center justify-center ${getAvatarColor(
+                    `${userData?.firstName} ${userData?.lastName}`
+                  )} text-white text-sm font-medium`}
+                >
+                  {userData
+                    ? getInitials(userData.firstName, userData.lastName)
+                    : ""}
+                </div>
+              )}
             </div>
-            {sidebarOpen && userData && (
+            {sidebarOpen && userData ? (
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-700">
-                  {`${userData.firstName} ${userData.lastName}`}
+                  {`${userData.firstName || ""} ${userData.lastName || ""}`}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {userData.role === "driver" ? "Conducteur" : "Passager"}
+                  {userData?.role === "driver" ? "Conducteur" : "Passager"}
                 </p>
               </div>
+            ) : (
+              sidebarOpen && (
+                <div className="ml-3">
+                  <p className="text-sm text-gray-500">Chargement...</p>
+                </div>
+              )
             )}
           </div>
           {sidebarOpen && (
