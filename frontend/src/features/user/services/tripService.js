@@ -1,10 +1,6 @@
 import api from "../../../config/api";
-import { ENDPOINTS } from "../../../constants/endpoints";
-import axios from "axios";
+import { API_ENDPOINTS } from "../../../config/api";
 import AuthService from "../../../services/authService";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
 class TripService {
   updateLocalDriverData(tripData) {
@@ -43,7 +39,7 @@ class TripService {
       }
 
       console.log("Searching with filters:", Object.fromEntries(params));
-      const response = await api.get(`${ENDPOINTS.RIDES.SEARCH}?${params}`);
+      const response = await api.get(`${API_ENDPOINTS.RIDES.SEARCH}?${params}`);
 
       if (response.data && response.data.success) {
         const rides = response.data.data.map((ride) => {
@@ -91,7 +87,7 @@ class TripService {
       }
 
       const response = await api.post(
-        ENDPOINTS.RIDES.BOOK(rideId),
+        API_ENDPOINTS.RIDES.BOOK(rideId),
         {
           seats,
           status: "pending",
@@ -109,21 +105,13 @@ class TripService {
   }
 
   async cancelBooking(rideId) {
-    const response = await axios.delete(`${API_URL}/rides/${rideId}/book`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+    const response = await api.delete(API_ENDPOINTS.RIDES.CANCEL(rideId));
     return response.data;
   }
 
   async getMyTrips() {
     try {
-      const response = await axios.get(`${API_URL}/rides/my-bookings`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const response = await api.get("/rides/my-bookings");
 
       if (response.data?.data) {
         response.data.data.forEach((trip) => {
@@ -139,11 +127,7 @@ class TripService {
 
   async getTripDetails(rideId) {
     try {
-      const response = await axios.get(`${API_URL}/rides/${rideId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const response = await api.get(API_ENDPOINTS.RIDES.GET(rideId));
 
       if (response.data?.data) {
         this.updateLocalDriverData(response.data.data);
@@ -157,8 +141,8 @@ class TripService {
 
   async rateTrip(tripId, rating) {
     try {
-      const response = await axios.post(
-        `${API_URL}/rides/${tripId}/rate`,
+      const response = await api.post(
+        `${API_ENDPOINTS.RIDES.GET(tripId)}/rate`,
         {
           rating,
         },
@@ -176,11 +160,9 @@ class TripService {
 
   async getReviews(tripId) {
     try {
-      const response = await axios.get(`${API_URL}/reviews/trip/${tripId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const response = await api.get(
+        `${API_ENDPOINTS.RIDES.GET(tripId)}/reviews`
+      );
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -189,7 +171,7 @@ class TripService {
 
   async getTripById(tripId) {
     try {
-      const response = await axios.get(`${API_URL}/trips/${tripId}`);
+      const response = await api.get(API_ENDPOINTS.RIDES.GET(tripId));
       return response.data;
     } catch (error) {
       throw (

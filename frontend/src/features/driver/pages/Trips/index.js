@@ -148,6 +148,16 @@ const ManageTrips = () => {
         </div>
       )}
 
+      {/* Modals */}
+      {showCreateForm && (
+        <div className="mb-8">
+          <CreateTripForm
+            onSuccess={handleCreateSuccess}
+            onCancel={() => setShowCreateForm(false)}
+          />
+        </div>
+      )}
+
       {/* Liste des trajets */}
       <div className="bg-white rounded-lg shadow">
         {loading ? (
@@ -162,14 +172,6 @@ const ManageTrips = () => {
           />
         )}
       </div>
-
-      {/* Modals */}
-      {showCreateForm && (
-        <CreateTripForm
-          onSuccess={handleCreateSuccess}
-          onCancel={() => setShowCreateForm(false)}
-        />
-      )}
 
       {editingTrip && (
         <EditTripForm
