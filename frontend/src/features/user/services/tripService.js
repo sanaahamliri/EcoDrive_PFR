@@ -1,11 +1,24 @@
 import api from "../../../config/api";
 import { ENDPOINTS } from "../../../constants/endpoints";
 import axios from "axios";
+import AuthService from "../../../services/authService";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
 class TripService {
+  updateLocalDriverData(tripData) {
+    if (tripData?.driver) {
+      const currentUser = AuthService.getUser();
+      if (currentUser && currentUser._id === tripData.driver._id) {
+        AuthService.updateUser({
+          ...currentUser,
+          ...tripData.driver,
+        });
+      }
+    }
+  }
+
   async searchRides(filters = {}, page = 1) {
     try {
       const params = new URLSearchParams();
@@ -34,6 +47,7 @@ class TripService {
 
       if (response.data && response.data.success) {
         const rides = response.data.data.map((ride) => {
+          this.updateLocalDriverData(ride);
           return {
             ...ride,
             features: this.getFeatures(ride.preferences),
@@ -104,12 +118,23 @@ class TripService {
   }
 
   async getMyTrips() {
-    const response = await axios.get(`${API_URL}/rides/my-bookings`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-    return response.data;
+    try {
+      const response = await axios.get(`${API_URL}/rides/my-bookings`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (response.data?.data) {
+        response.data.data.forEach((trip) => {
+          this.updateLocalDriverData(trip);
+        });
+      }
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   async getTripDetails(rideId) {
@@ -120,7 +145,9 @@ class TripService {
         },
       });
 
-  
+      if (response.data?.data) {
+        this.updateLocalDriverData(response.data.data);
+      }
 
       return response.data;
     } catch (error) {

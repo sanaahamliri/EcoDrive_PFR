@@ -66,16 +66,7 @@ function App() {
           }
         />
 
-        {/* Routes admin avec son propre layout (à créer) */}
-        <Route path="admin/*" element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <Routes>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="users" element={<ManageUsers />} />
-              <Route path="settings" element={<Settings />} />
-            </Routes>
-          </ProtectedRoute>
-        } />
+        
       </Routes>
     </Router>
   );

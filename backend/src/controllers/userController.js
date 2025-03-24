@@ -109,30 +109,41 @@ exports.updateProfile = asyncHandler(async (req, res) => {
 });
 
 exports.updateDriverProfile = asyncHandler(async (req, res, next) => {
-  if (req.user.role !== "driver") {
-    return next(
-      new ErrorResponse(
-        "Seuls les conducteurs peuvent mettre à jour ces informations",
-        403
-      )
-    );
+  try {
+    console.log("Mise à jour du profil conducteur - Données reçues:", req.body);
+
+    if (req.user.role !== "driver") {
+      return next(
+        new ErrorResponse(
+          "Seuls les conducteurs peuvent mettre à jour ces informations",
+          403
+        )
+      );
+    }
+
+    const fieldsToUpdate = {
+      "driverInfo.carModel": req.body.carModel,
+      "driverInfo.carYear": req.body.carYear,
+      "driverInfo.licensePlate": req.body.licensePlate,
+    };
+
+    console.log("Champs à mettre à jour:", fieldsToUpdate);
+
+    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+      new: true,
+      runValidators: true,
+    });
+
+    console.log("Utilisateur mis à jour:", user);
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du profil conducteur:", error);
+    next(error);
   }
-
-  const fieldsToUpdate = {
-    "driverInfo.carModel": req.body.carModel,
-    "driverInfo.carYear": req.body.carYear,
-    "driverInfo.licensePlate": req.body.licensePlate,
-  };
-
-  const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-    new: true,
-    runValidators: true,
-  });
-
-  res.status(200).json({
-    success: true,
-    data: user,
-  });
 });
 
 exports.updatePreferences = asyncHandler(async (req, res) => {

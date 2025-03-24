@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import TripService from "../services/tripService";
+import AuthService from "../../../services/authService";
 import {
   ArrowLeft,
   MapPin,
@@ -14,6 +15,8 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
+import ContactModal from "./ContactModal";
+import Avatar from "../../../components/Avatar";
 
 export default function TripDetails() {
   const { id } = useParams();
@@ -26,6 +29,17 @@ export default function TripDetails() {
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [userReview, setUserReview] = useState(null);
+  const [userData, setUserData] = useState(AuthService.getUser());
+  const [selectedDriver, setSelectedDriver] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = AuthService.subscribe(() => {
+      setUserData(AuthService.getUser());
+      loadTripDetails();
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     loadTripDetails();
@@ -259,20 +273,11 @@ export default function TripDetails() {
             <div className="space-y-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <span className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
+                  <Avatar
+                    src={trip.driver?.avatarUrl}
+                    size={32}
+                    alt={`${trip.driver?.firstName} ${trip.driver?.lastName}`}
+                  />
                 </span>
                 Conducteur
               </h2>
@@ -470,6 +475,13 @@ export default function TripDetails() {
           </div>
         )}
       </div>
+
+      {selectedDriver && (
+        <ContactModal
+          driver={selectedDriver}
+          onClose={() => setSelectedDriver(null)}
+        />
+      )}
     </div>
   );
 }

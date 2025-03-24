@@ -1,29 +1,46 @@
 import React from "react";
 
 const Avatar = ({ src, size = 150, className = "" }) => {
-  const DEFAULT_AVATAR = "/images/default-avatar.png";
+  // Utilisation d'une URL d'avatar par défaut plus fiable
   const FALLBACK_AVATAR =
-    "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+    "https://ui-avatars.com/api/?background=0D8ABC&color=fff";
 
-  const [imgSrc, setImgSrc] = React.useState(src || DEFAULT_AVATAR);
+  const getImageSrc = (src) => {
+    if (!src) return FALLBACK_AVATAR;
+
+    // Si src est un objet avec une propriété avatar contenant des données base64
+    if (src.avatar?.data) {
+      return `data:image/jpeg;base64,${src.avatar.data}`;
+    }
+
+    // Si src est directement un objet avec des données base64
+    if (src.data) {
+      return `data:image/jpeg;base64,${src.data}`;
+    }
+
+    // Si src est une URL
+    if (typeof src === "string") {
+      if (src.startsWith("data:")) return src;
+      if (src.startsWith("http")) return src;
+      return FALLBACK_AVATAR;
+    }
+
+    return FALLBACK_AVATAR;
+  };
+
+  const [imgSrc, setImgSrc] = React.useState(getImageSrc(src));
   const [hasError, setHasError] = React.useState(false);
 
   React.useEffect(() => {
-    setImgSrc(src || DEFAULT_AVATAR);
+    setImgSrc(getImageSrc(src));
     setHasError(false);
   }, [src]);
 
   const handleError = () => {
-    console.log("Avatar load error:", {
-      attempted: imgSrc,
-      willTry: !hasError ? DEFAULT_AVATAR : FALLBACK_AVATAR,
-    });
-
     if (!hasError) {
-      setImgSrc(DEFAULT_AVATAR);
-      setHasError(true);
-    } else {
+      console.error("Failed to load avatar:", src);
       setImgSrc(FALLBACK_AVATAR);
+      setHasError(true);
     }
   };
 

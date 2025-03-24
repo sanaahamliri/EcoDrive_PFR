@@ -2,6 +2,19 @@ import api from "./api/axiosConfig";
 import { API_ENDPOINTS } from "../config/api";
 
 class AuthService {
+  static listeners = new Set();
+
+  static subscribe(listener) {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  static notifyListeners() {
+    this.listeners.forEach((listener) => listener());
+  }
+
   static async register(userData) {
     try {
       console.log(
@@ -9,6 +22,11 @@ class AuthService {
         `${api.defaults.baseURL}${API_ENDPOINTS.AUTH.REGISTER}`
       );
       const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, userData);
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        this.notifyListeners();
+      }
       return response.data;
     } catch (error) {
       console.error("Registration error:", error.response || error);
@@ -16,6 +34,11 @@ class AuthService {
         error.response?.data?.message || error.message || "Erreur l'inscription"
       );
     }
+  }
+
+  static updateUser(userData) {
+    localStorage.setItem("user", JSON.stringify(userData));
+    this.notifyListeners();
   }
 
   static async login(email, password) {
@@ -34,6 +57,7 @@ class AuthService {
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
+        this.notifyListeners();
       }
       return response.data;
     } catch (error) {
@@ -55,6 +79,7 @@ class AuthService {
       await api.get(API_ENDPOINTS.AUTH.LOGOUT);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      this.notifyListeners();
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
     }

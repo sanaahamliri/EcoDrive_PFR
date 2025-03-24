@@ -1,6 +1,7 @@
-
 import React from "react";
 import rideService from "../services/tripService";
+import AuthService from "../../../services/authService";
+import Avatar from "../../../components/Avatar";
 
 class TripSearch extends React.Component {
   constructor(props) {
@@ -22,11 +23,23 @@ class TripSearch extends React.Component {
         date: "",
         seats: "",
       },
+      userData: AuthService.getUser(),
     };
   }
 
   componentDidMount() {
+    this.unsubscribe = AuthService.subscribe(() => {
+      this.setState({ userData: AuthService.getUser() }, () => {
+        this.fetchTrips({});
+      });
+    });
     this.fetchTrips({});
+  }
+
+  componentWillUnmount() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+    }
   }
 
   fetchTrips = async (filters = null) => {
@@ -146,8 +159,6 @@ class TripSearch extends React.Component {
 
     return (
       <div className="space-y-8">
-        
-
         <form
           onSubmit={this.handleSearch}
           className="rounded-xl bg-white shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl border border-gray-100"
@@ -165,26 +176,6 @@ class TripSearch extends React.Component {
           <div className="p-6 bg-gradient-to-b from-white to-gray-50">
             <div className="grid gap-6 md:grid-cols-5">
               <div className="space-y-2 md:col-span-1">
-                <label
-                  htmlFor="from"
-                  className="block text-sm font-medium text-gray-700 flex items-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                  </svg>
-                  Départ
-                </label>
                 <div className="relative rounded-lg shadow-sm group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
@@ -217,26 +208,6 @@ class TripSearch extends React.Component {
               </div>
 
               <div className="space-y-2 md:col-span-1">
-                <label
-                  htmlFor="to"
-                  className="block text-sm font-medium text-gray-700 flex items-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                  </svg>
-                  Destination
-                </label>
                 <div className="relative rounded-lg shadow-sm group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
@@ -269,26 +240,6 @@ class TripSearch extends React.Component {
               </div>
 
               <div className="space-y-2 md:col-span-1">
-                <label
-                  htmlFor="date"
-                  className="block text-sm font-medium text-gray-700 flex items-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Date
-                </label>
                 <div className="relative rounded-lg shadow-sm group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
@@ -320,26 +271,6 @@ class TripSearch extends React.Component {
               </div>
 
               <div className="space-y-2 md:col-span-1">
-                <label
-                  htmlFor="seats"
-                  className="block text-sm font-medium text-gray-700 flex items-center"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
-                  Passagers
-                </label>
                 <div className="relative rounded-lg shadow-sm group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
@@ -634,10 +565,10 @@ class TripSearch extends React.Component {
                   <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-6 bg-gray-50">
                     <div className="flex items-center space-x-4">
                       <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white shadow">
-                        <img
-                          src={trip.driver?.avatar || "/placeholder.svg"}
+                        <Avatar
+                          src={trip.driver?.avatar}
+                          size={48}
                           alt={trip.driver?.firstName || "Conducteur"}
-                          className="h-full w-full object-cover"
                         />
                       </div>
                       <div>

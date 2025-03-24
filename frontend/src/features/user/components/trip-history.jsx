@@ -1,7 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import TripService from "../services/tripService";
+import UserService from "../services/userService";
 import ContactModal from "./ContactModal";
+import Avatar from "../../../components/Avatar";
 
 export default function TripHistory() {
   const navigate = useNavigate();
@@ -16,10 +18,27 @@ export default function TripHistory() {
   });
   const [searchInput, setSearchInput] = React.useState("");
   const searchTimeoutRef = React.useRef(null);
+  const [driverAvatars, setDriverAvatars] = React.useState({});
 
   React.useEffect(() => {
     loadTrips();
   }, [filters]);
+
+  const loadDriverAvatar = async (driverId) => {
+    try {
+      if (!driverAvatars[driverId]) {
+        const response = await UserService.getProfile(driverId);
+        if (response.data?.data?.avatar) {
+          setDriverAvatars((prev) => ({
+            ...prev,
+            [driverId]: response.data.data.avatar,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement de l'avatar:", error);
+    }
+  };
 
   const loadTrips = async () => {
     try {
@@ -31,6 +50,13 @@ export default function TripHistory() {
         const now = new Date();
         return tripDate < now;
       });
+
+      // Charger les avatars pour chaque conducteur
+      for (const trip of pastTrips) {
+        if (trip.driver?._id) {
+          await loadDriverAvatar(trip.driver._id);
+        }
+      }
 
       const { period, destination, search } = filters;
 
@@ -344,10 +370,13 @@ export default function TripHistory() {
                     <td className="px-4 py-4">
                       <div className="flex items-center space-x-2">
                         <div className="h-8 w-8 rounded-full overflow-hidden">
-                          <img
-                            src={trip.driver.avatar || "/placeholder.svg"}
+                          <Avatar
+                            src={
+                              driverAvatars[trip.driver._id] ||
+                              trip.driver.avatar
+                            }
+                            size={32}
                             alt={`${trip.driver.firstName} ${trip.driver.lastName}`}
-                            className="h-full w-full object-cover"
                           />
                         </div>
                         <div className="font-medium">

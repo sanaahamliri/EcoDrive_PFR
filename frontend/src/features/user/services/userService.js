@@ -1,5 +1,6 @@
 import api from "../../../config/axios";
 import { API_URL } from "../../../config/constants";
+import AuthService from "../../../services/authService";
 
 class UserService {
   static async getProfile() {
@@ -72,6 +73,18 @@ class UserService {
       });
 
       console.log("Upload response in service:", response);
+
+      // Mise à jour des données de l'utilisateur dans le stockage local
+      if (response.data?.success && response.data?.data?.avatar) {
+        const currentUser = AuthService.getUser();
+        if (currentUser) {
+          AuthService.updateUser({
+            ...currentUser,
+            avatar: response.data.data.avatar,
+          });
+        }
+      }
+
       return response;
     } catch (error) {
       console.error("Upload error in service:", error);
