@@ -105,8 +105,7 @@ const DriverLayout = ({ children }) => {
       userData.driverInfo?.carModel,
       userData.driverInfo?.carYear,
       userData.driverInfo?.licensePlate,
-      userData.driverInfo?.drivingLicense,
-      userData.avatar,
+      userData.avatarUrl || (userData.avatar && userData.avatar.data),
     ];
 
     const completedFields = requiredFields.filter((field) => field).length;

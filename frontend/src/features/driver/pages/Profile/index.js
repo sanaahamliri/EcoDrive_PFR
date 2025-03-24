@@ -21,15 +21,15 @@ const ProfileValidationSchema = Yup.object().shape({
     .nullable()
     .matches(/^[0-9+\s-]*$/, "Format de téléphone invalide"),
   carModel: Yup.string()
-    .required("Le modèle de voiture est requis")
+    .nullable()
     .min(2, "Le modèle doit contenir au moins 2 caractères"),
   carYear: Yup.number()
-    .required("L'année du véhicule est requise")
+    .nullable()
     .min(1990, "L'année doit être supérieure à 1990")
     .max(new Date().getFullYear(), "L'année ne peut pas être dans le futur")
     .typeError("L'année doit être un nombre"),
   licensePlate: Yup.string()
-    .required("La plaque d'immatriculation est requise")
+    .nullable()
     .min(2, "La plaque d'immatriculation doit contenir au moins 2 caractères")
     .max(10, "La plaque d'immatriculation ne peut pas dépasser 10 caractères"),
 });
@@ -100,7 +100,6 @@ const DriverProfile = () => {
 
   const handleProfileUpdate = async (values) => {
     try {
-      
       const formattedValues = {
         ...values,
         carYear: parseInt(values.carYear),
