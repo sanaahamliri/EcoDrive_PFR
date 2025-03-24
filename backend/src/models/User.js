@@ -118,4 +118,18 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
+userSchema.methods.isDriverProfileComplete = function () {
+  if (this.role !== "driver") return false;
+
+  return (
+    this.firstName &&
+    this.lastName &&
+    this.email &&
+    this.phoneNumber &&
+    this.driverInfo?.carModel &&
+    this.driverInfo?.carYear &&
+    this.driverInfo?.licensePlate
+  );
+};
+
 module.exports = mongoose.model("User", userSchema);

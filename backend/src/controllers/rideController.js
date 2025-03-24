@@ -6,6 +6,24 @@ const Review = require("../models/Review");
 
 // @desc    Créer un nouveau trajet
 exports.createRide = asyncHandler(async (req, res) => {
+  // Vérifier si l'utilisateur est un conducteur
+  if (req.user.role !== "driver") {
+    return res.status(403).json({
+      success: false,
+      message: "Seuls les conducteurs peuvent créer des trajets",
+    });
+  }
+
+  // Vérifier si le profil conducteur est complet
+  const user = await User.findById(req.user.id);
+  if (!user.isDriverProfileComplete()) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Votre profil conducteur doit être complètement rempli avant de pouvoir créer un trajet. Veuillez compléter toutes les informations requises dans votre profil.",
+    });
+  }
+
   req.body.driver = req.user.id;
   const ride = await Ride.create(req.body);
   await User.findByIdAndUpdate(req.user.id, {
