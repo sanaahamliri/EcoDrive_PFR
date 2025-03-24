@@ -31,38 +31,46 @@ export default function TripDetails() {
   const [userReview, setUserReview] = useState(null);
   const [userData, setUserData] = useState(AuthService.getUser());
   const [selectedDriver, setSelectedDriver] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const unsubscribe = AuthService.subscribe(() => {
       setUserData(AuthService.getUser());
-      loadTripDetails();
+      if (id) {
+        loadTripDetails();
+      }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [id]);
 
   useEffect(() => {
-    loadTripDetails();
+    if (id) {
+      loadTripDetails();
+    }
   }, [id]);
 
   const loadTripDetails = async () => {
     try {
       setLoading(true);
       const response = await TripService.getTripDetails(id);
-      setTrip(response.data);
+      if (response && response.data) {
+        setTrip(response.data);
+        try {
+          const reviewsResponse = await TripService.getReviews(id);
+          const userReview = reviewsResponse.data.userReview;
+          setReviews(reviewsResponse.data.reviews);
 
-      try {
-        const reviewsResponse = await TripService.getReviews(id);
-        const userReview = reviewsResponse.data.userReview;
-        setReviews(reviewsResponse.data.reviews);
-
-        if (userReview) {
-          setUserRating(userReview.rating);
-          setRatingSubmitted(true);
-          setUserReview(userReview);
+          if (userReview) {
+            setUserRating(userReview.rating);
+            setRatingSubmitted(true);
+            setUserReview(userReview);
+          }
+        } catch (reviewError) {
+          console.error("Error loading reviews:", reviewError);
         }
-      } catch (reviewError) {
-        console.error("Error loading reviews:", reviewError);
+      } else {
+        setError("Trajet non trouvé");
       }
     } catch (err) {
       toast.error("Erreur lors du chargement des détails du trajet", {
@@ -70,6 +78,9 @@ export default function TripDetails() {
         autoClose: 3000,
       });
       console.error("Error loading trip details:", err);
+      setError(
+        "Impossible de charger les détails du trajet. Veuillez réessayer plus tard."
+      );
     } finally {
       setLoading(false);
     }
@@ -162,15 +173,32 @@ export default function TripDetails() {
 
   if (loading) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen p-6">
+        <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+          <div className="flex">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-red-400 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div className="text-sm text-red-700">{error}</div>
           </div>
         </div>
       </div>
@@ -179,16 +207,15 @@ export default function TripDetails() {
 
   if (!trip) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <div className="text-gray-600 text-lg font-medium">
-          Trajet non trouvé
+      <div className="min-h-screen p-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Trajet non trouvé
+          </h2>
+          <p className="mt-2 text-gray-600">
+            Le trajet que vous recherchez n'existe pas ou a été supprimé.
+          </p>
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-        >
-          Retour
-        </button>
       </div>
     );
   }
@@ -274,7 +301,7 @@ export default function TripDetails() {
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <span className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
                   <Avatar
-                    src={trip.driver?.avatarUrl}
+                    src={trip.driver?.avatar}
                     size={32}
                     alt={`${trip.driver?.firstName} ${trip.driver?.lastName}`}
                   />
@@ -304,6 +331,12 @@ export default function TripDetails() {
                       {trip.driver.stats?.rating || "Pas encore noté"}
                     </span>
                   </div>
+                  <button
+                    onClick={() => setSelectedDriver(trip.driver)}
+                    className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Contacter le conducteur
+                  </button>
                 </div>
               </div>
             </div>
@@ -320,30 +353,19 @@ export default function TripDetails() {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Modèle</span>
                   <span className="font-medium">
-                    {trip.vehicle?.model || "Non spécifié"}
+                    {trip.driver?.driverInfo?.carModel || "Non spécifié"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Couleur</span>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-4 w-4 rounded-full"
-                      style={{
-                        backgroundColor:
-                          trip.vehicle?.color?.toLowerCase() === "noir"
-                            ? "black"
-                            : trip.vehicle?.color?.toLowerCase() || "gray",
-                      }}
-                    ></span>
-                    <span className="font-medium">
-                      {trip.vehicle?.color || "Non spécifié"}
-                    </span>
-                  </div>
+                  <span className="text-gray-600">Année</span>
+                  <span className="font-medium">
+                    {trip.driver?.driverInfo?.carYear || "Non spécifié"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Immatriculation</span>
                   <span className="font-medium">
-                    {trip.vehicle?.plate || "Non spécifié"}
+                    {trip.driver?.driverInfo?.licensePlate || "Non spécifié"}
                   </span>
                 </div>
               </div>

@@ -187,6 +187,18 @@ class TripService {
     }
   }
 
+  async getTripById(tripId) {
+    try {
+      const response = await axios.get(`${API_URL}/trips/${tripId}`);
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data?.message ||
+        "Une erreur est survenue lors de la récupération des détails du trajet"
+      );
+    }
+  }
+
   handleError(error) {
     if (error.response?.status === 401) {
       return "Veuillez vous reconnecter pour réserver ce trajet";

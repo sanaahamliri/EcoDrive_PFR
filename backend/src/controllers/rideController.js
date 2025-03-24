@@ -1,20 +1,20 @@
-const Ride = require('../models/Ride');
-const User = require('../models/User');
-const ErrorResponse = require('../utils/errorResponse');
-const asyncHandler = require('../middlewares/async');
-const Review = require('../models/Review');
+const Ride = require("../models/Ride");
+const User = require("../models/User");
+const ErrorResponse = require("../utils/errorResponse");
+const asyncHandler = require("../middlewares/async");
+const Review = require("../models/Review");
 
 // @desc    Créer un nouveau trajet
 exports.createRide = asyncHandler(async (req, res) => {
   req.body.driver = req.user.id;
   const ride = await Ride.create(req.body);
   await User.findByIdAndUpdate(req.user.id, {
-    $inc: { 'stats.totalTrips': 1 }
+    $inc: { "stats.totalTrips": 1 },
   });
 
   res.status(201).json({
     success: true,
-    data: ride
+    data: ride,
   });
 });
 
@@ -22,21 +22,23 @@ exports.createRide = asyncHandler(async (req, res) => {
 exports.getRides = asyncHandler(async (req, res) => {
   let query = {};
 
-  if (req.query.from) query['departure.city'] = new RegExp(req.query.from, 'i');
-  if (req.query.to) query['destination.city'] = new RegExp(req.query.to, 'i');
+  if (req.query.from) query["departure.city"] = new RegExp(req.query.from, "i");
+  if (req.query.to) query["destination.city"] = new RegExp(req.query.to, "i");
   if (req.query.date) {
     const date = new Date(req.query.date);
     query.departureTime = {
       $gte: new Date(date.setHours(0, 0, 0)),
-      $lte: new Date(date.setHours(23, 59, 59))
+      $lte: new Date(date.setHours(23, 59, 59)),
     };
   }
 
-  if (req.query.maxPrice) query.price = { $lte: parseFloat(req.query.maxPrice) };
-  if (req.query.seats) query.availableSeats = { $gte: parseInt(req.query.seats) };
+  if (req.query.maxPrice)
+    query.price = { $lte: parseFloat(req.query.maxPrice) };
+  if (req.query.seats)
+    query.availableSeats = { $gte: parseInt(req.query.seats) };
   if (req.query.preferences) {
-    const prefs = req.query.preferences.split(',');
-    prefs.forEach(pref => {
+    const prefs = req.query.preferences.split(",");
+    prefs.forEach((pref) => {
       query[`preferences.${pref}`] = true;
     });
   }
@@ -48,10 +50,10 @@ exports.getRides = asyncHandler(async (req, res) => {
   const total = await Ride.countDocuments(query);
 
   const rides = await Ride.find(query)
-    .populate('driver', 'firstName lastName avatar stats.rating')
+    .populate("driver", "firstName lastName avatar stats.rating")
     .skip(startIndex)
     .limit(limit)
-    .sort({ departureTime: 'asc' });
+    .sort({ departureTime: "asc" });
 
   const pagination = {};
   if (endIndex < total) {
@@ -67,23 +69,28 @@ exports.getRides = asyncHandler(async (req, res) => {
     totalPages: Math.ceil(total / limit),
     currentPage: page,
     pagination,
-    data: rides
+    data: rides,
   });
 });
 
 // @desc    Obtenir un trajet spécifique
 exports.getRide = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id)
-    .populate('driver', 'firstName lastName avatar stats.rating phoneNumber')
-    .populate('passengers.user', 'firstName lastName avatar');
+    .populate(
+      "driver",
+      "firstName lastName avatar stats.rating phoneNumber driverInfo email"
+    )
+    .populate("passengers.user", "firstName lastName avatar");
 
   if (!ride) {
-    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404)
+    );
   }
 
   res.status(200).json({
     success: true,
-    data: ride
+    data: ride,
   });
 });
 
@@ -92,10 +99,12 @@ exports.updateRide = asyncHandler(async (req, res, next) => {
   let ride = await Ride.findById(req.params.id);
 
   if (!ride) {
-    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404)
+    );
   }
 
-  if (ride.driver.toString() !== req.user.id && req.user.role !== 'admin') {
+  if (ride.driver.toString() !== req.user.id && req.user.role !== "admin") {
     return next(new ErrorResponse(`Non autorisé à modifier ce trajet`, 401));
   }
 
@@ -103,14 +112,19 @@ exports.updateRide = asyncHandler(async (req, res, next) => {
   if (ride.passengers.length > 0) {
     if (req.body.availableSeats) {
       const totalBookedSeats = ride.passengers.reduce((total, passenger) => {
-        if (passenger.status === 'accepted') {
+        if (passenger.status === "accepted") {
           return total + passenger.bookedSeats;
         }
         return total;
       }, 0);
 
       if (req.body.availableSeats < totalBookedSeats) {
-        return next(new ErrorResponse(`Impossible de réduire le nombre de places en dessous de ${totalBookedSeats} (places déjà réservées)`, 400));
+        return next(
+          new ErrorResponse(
+            `Impossible de réduire le nombre de places en dessous de ${totalBookedSeats} (places déjà réservées)`,
+            400
+          )
+        );
       }
     }
 
@@ -120,19 +134,24 @@ exports.updateRide = asyncHandler(async (req, res, next) => {
       const hoursUntilDeparture = (newDepartureTime - now) / (1000 * 60 * 60);
 
       if (hoursUntilDeparture < 24) {
-        return next(new ErrorResponse(`Impossible de modifier l'heure de départ à moins de 24h du départ`, 400));
+        return next(
+          new ErrorResponse(
+            `Impossible de modifier l'heure de départ à moins de 24h du départ`,
+            400
+          )
+        );
       }
     }
   }
 
   ride = await Ride.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
-    runValidators: true
+    runValidators: true,
   });
 
   res.status(200).json({
     success: true,
-    data: ride
+    data: ride,
   });
 });
 
@@ -141,32 +160,41 @@ exports.deleteRide = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
   if (!ride) {
-    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404)
+    );
   }
 
   if (!req.user) {
-    return next(new ErrorResponse('Non autorisé - Authentification requise', 401));
+    return next(
+      new ErrorResponse("Non autorisé - Authentification requise", 401)
+    );
   }
 
-  if (ride.driver.toString() !== req.user.id && req.user.role !== 'admin') {
+  if (ride.driver.toString() !== req.user.id && req.user.role !== "admin") {
     return next(new ErrorResponse(`Non autorisé à supprimer ce trajet`, 401));
   }
 
   if (ride.passengers && ride.passengers.length > 0) {
-    return next(new ErrorResponse(`Impossible de supprimer un trajet avec des réservations existantes`, 400));
+    return next(
+      new ErrorResponse(
+        `Impossible de supprimer un trajet avec des réservations existantes`,
+        400
+      )
+    );
   }
 
   await Promise.all([
     Ride.findByIdAndDelete(req.params.id),
-    
+
     User.findByIdAndUpdate(req.user.id, {
-      $inc: { 'stats.totalTrips': -1 }
-    })
+      $inc: { "stats.totalTrips": -1 },
+    }),
   ]);
 
   res.status(200).json({
     success: true,
-    data: {}
+    data: {},
   });
 });
 
@@ -175,32 +203,38 @@ exports.bookRide = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
   if (!ride) {
-    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404)
+    );
   }
 
   if (ride.driver.toString() === req.user.id) {
-    return next(new ErrorResponse(`Vous ne pouvez pas réserver votre propre trajet`, 400));
+    return next(
+      new ErrorResponse(`Vous ne pouvez pas réserver votre propre trajet`, 400)
+    );
   }
 
-  if (ride.passengers.some(p => p.user.toString() === req.user.id)) {
+  if (ride.passengers.some((p) => p.user.toString() === req.user.id)) {
     return next(new ErrorResponse(`Vous avez déjà réservé ce trajet`, 400));
   }
 
   const seatsRequested = req.body.seats || 1;
   if (ride.remainingSeats < seatsRequested) {
-    return next(new ErrorResponse(`Il n'y a pas assez de places disponibles`, 400));
+    return next(
+      new ErrorResponse(`Il n'y a pas assez de places disponibles`, 400)
+    );
   }
 
   ride.passengers.push({
     user: req.user.id,
-    bookedSeats: seatsRequested
+    bookedSeats: seatsRequested,
   });
 
   await ride.save();
 
   res.status(200).json({
     success: true,
-    data: ride
+    data: ride,
   });
 });
 
@@ -209,11 +243,13 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
   if (!ride) {
-    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404)
+    );
   }
 
   const bookingIndex = ride.passengers.findIndex(
-    p => p.user.toString() === req.user.id
+    (p) => p.user.toString() === req.user.id
   );
 
   if (bookingIndex === -1) {
@@ -221,9 +257,14 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
   }
 
   const passenger = ride.passengers[bookingIndex];
-  
-  if (passenger.status !== 'pending') {
-    return next(new ErrorResponse(`Impossible d'annuler une réservation déjà confirmée`, 400));
+
+  if (passenger.status !== "pending") {
+    return next(
+      new ErrorResponse(
+        `Impossible d'annuler une réservation déjà confirmée`,
+        400
+      )
+    );
   }
 
   // Vérifier si le trajet est à moins de 24h du départ
@@ -232,7 +273,12 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
   const hoursUntilDeparture = (departureTime - now) / (1000 * 60 * 60);
 
   if (hoursUntilDeparture < 24) {
-    return next(new ErrorResponse(`Impossible d'annuler moins de 24h avant le départ`, 400));
+    return next(
+      new ErrorResponse(
+        `Impossible d'annuler moins de 24h avant le départ`,
+        400
+      )
+    );
   }
 
   ride.passengers.splice(bookingIndex, 1);
@@ -240,20 +286,20 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    data: ride
+    data: ride,
   });
 });
 
 // @desc    Obtenir les trajets du conducteur connecté
 exports.getMyRides = asyncHandler(async (req, res) => {
   const rides = await Ride.find({ driver: req.user.id })
-    .populate('passengers.user', 'firstName lastName avatar')
+    .populate("passengers.user", "firstName lastName avatar")
     .sort({ departureTime: -1 });
 
   res.status(200).json({
     success: true,
     count: rides.length,
-    data: rides
+    data: rides,
   });
 });
 
@@ -262,39 +308,46 @@ exports.confirmBooking = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
   if (!ride) {
-    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404)
+    );
   }
 
   if (ride.driver.toString() !== req.user.id) {
-    return next(new ErrorResponse(`Non autorisé à confirmer cette réservation`, 401));
+    return next(
+      new ErrorResponse(`Non autorisé à confirmer cette réservation`, 401)
+    );
   }
 
-  const passenger = ride.passengers.find(p => p.user.toString() === req.params.passengerId);
-  
+  const passenger = ride.passengers.find(
+    (p) => p.user.toString() === req.params.passengerId
+  );
+
   if (!passenger) {
     return next(new ErrorResponse(`Passager non trouvé`, 404));
   }
 
-  if (passenger.status !== 'pending') {
+  if (passenger.status !== "pending") {
     return next(new ErrorResponse(`Cette réservation a déjà été traitée`, 400));
   }
 
-
   const totalBookedSeats = ride.passengers.reduce((total, p) => {
-    if (p.status === 'accepted') return total + p.bookedSeats;
+    if (p.status === "accepted") return total + p.bookedSeats;
     return total;
   }, 0);
 
   if (totalBookedSeats + passenger.bookedSeats > ride.availableSeats) {
-    return next(new ErrorResponse(`Il n'y a plus assez de places disponibles`, 400));
+    return next(
+      new ErrorResponse(`Il n'y a plus assez de places disponibles`, 400)
+    );
   }
 
-  passenger.status = 'accepted';
+  passenger.status = "accepted";
   await ride.save();
 
   res.status(200).json({
     success: true,
-    data: ride
+    data: ride,
   });
 });
 
@@ -303,54 +356,62 @@ exports.rejectBooking = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
   if (!ride) {
-    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404)
+    );
   }
 
   if (ride.driver.toString() !== req.user.id) {
-    return next(new ErrorResponse(`Non autorisé à rejeter cette réservation`, 401));
+    return next(
+      new ErrorResponse(`Non autorisé à rejeter cette réservation`, 401)
+    );
   }
 
-  const passenger = ride.passengers.find(p => p.user.toString() === req.params.passengerId);
-  
+  const passenger = ride.passengers.find(
+    (p) => p.user.toString() === req.params.passengerId
+  );
+
   if (!passenger) {
     return next(new ErrorResponse(`Passager non trouvé`, 404));
   }
 
-  if (passenger.status !== 'pending') {
+  if (passenger.status !== "pending") {
     return next(new ErrorResponse(`Cette réservation a déjà été traitée`, 400));
   }
 
-  passenger.status = 'rejected';
+  passenger.status = "rejected";
   await ride.save();
 
   res.status(200).json({
     success: true,
-    data: ride
+    data: ride,
   });
 });
 
 // @desc    Obtenir les réservations de l'utilisateur connecté
 exports.getMyBookings = asyncHandler(async (req, res) => {
   const rides = await Ride.find({
-    'passengers.user': req.user.id
+    "passengers.user": req.user.id,
   })
-  .populate('driver', 'firstName lastName avatar stats.rating')
-  .populate('passengers.user', 'firstName lastName avatar')
-  .sort({ departureTime: -1 });
+    .populate("driver", "firstName lastName avatar stats.rating")
+    .populate("passengers.user", "firstName lastName avatar")
+    .sort({ departureTime: -1 });
 
-  const userRides = rides.map(ride => {
-    const userBooking = ride.passengers.find(p => p.user._id.toString() === req.user.id);
+  const userRides = rides.map((ride) => {
+    const userBooking = ride.passengers.find(
+      (p) => p.user._id.toString() === req.user.id
+    );
     return {
       ...ride.toObject(),
       status: userBooking.status,
-      bookedSeats: userBooking.bookedSeats
+      bookedSeats: userBooking.bookedSeats,
     };
   });
 
   res.status(200).json({
     success: true,
     count: userRides.length,
-    data: userRides
+    data: userRides,
   });
 });
 
@@ -359,23 +420,32 @@ exports.rateTrip = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
   if (!ride) {
-    return next(new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404));
+    return next(
+      new ErrorResponse(`Trajet non trouvé avec l'id ${req.params.id}`, 404)
+    );
   }
 
   // Vérifier que l'utilisateur était passager
-  const wasPassenger = ride.passengers.some(p => p.user.toString() === req.user.id);
+  const wasPassenger = ride.passengers.some(
+    (p) => p.user.toString() === req.user.id
+  );
   if (!wasPassenger) {
-    return next(new ErrorResponse('Vous devez avoir été passager pour noter ce trajet', 403));
+    return next(
+      new ErrorResponse(
+        "Vous devez avoir été passager pour noter ce trajet",
+        403
+      )
+    );
   }
 
   // Vérifier si l'utilisateur a déjà noté ce trajet
   const existingReview = await Review.findOne({
     ride: ride._id,
-    reviewer: req.user.id
+    reviewer: req.user.id,
   });
 
   if (existingReview) {
-    return next(new ErrorResponse('Vous avez déjà noté ce trajet', 400));
+    return next(new ErrorResponse("Vous avez déjà noté ce trajet", 400));
   }
 
   // Créer la review
@@ -385,20 +455,21 @@ exports.rateTrip = asyncHandler(async (req, res, next) => {
     ride: ride._id,
     reviewer: req.user.id,
     reviewedUser: ride.driver,
-    type: 'passenger'
+    type: "passenger",
   });
 
   // Mettre à jour la note moyenne du conducteur
   const reviews = await Review.find({ reviewedUser: ride.driver });
-  const avgRating = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+  const avgRating =
+    reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
 
   await User.findByIdAndUpdate(ride.driver, {
-    'stats.rating': avgRating.toFixed(1),
-    'stats.reviewCount': reviews.length
+    "stats.rating": avgRating.toFixed(1),
+    "stats.reviewCount": reviews.length,
   });
 
   res.status(201).json({
     success: true,
-    data: review
+    data: review,
   });
 });
