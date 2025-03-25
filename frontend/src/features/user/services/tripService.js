@@ -161,7 +161,7 @@ class TripService {
   async getReviews(tripId) {
     try {
       const response = await api.get(
-        `${API_ENDPOINTS.RIDES.GET(tripId)}/reviews`
+        `${API_ENDPOINTS.REVIEWS.BASE}/trip/${tripId}`
       );
       return response.data;
     } catch (error) {
