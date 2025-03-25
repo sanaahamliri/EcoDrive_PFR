@@ -183,6 +183,7 @@ export default function TripHistory() {
       // Charger les détails complets du conducteur
       const response = await TripService.getDriverDetails(driver._id);
       if (response && response.data) {
+        console.log("Driver details received:", response.data);
         setSelectedDriver(response.data);
       }
     } catch (error) {

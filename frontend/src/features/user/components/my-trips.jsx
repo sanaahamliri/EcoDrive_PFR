@@ -125,7 +125,6 @@ const MyTrips = () => {
       const response = await UserTripService.getDriverDetails(driver._id);
       if (response && response.data) {
         console.log("Driver details received:", response.data);
-        console.log("Driver avatar URL:", response.data.avatarUrl);
         setSelectedDriver(response.data);
         setShowContactModal(true);
       }

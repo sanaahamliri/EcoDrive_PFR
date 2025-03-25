@@ -199,8 +199,17 @@ class TripService {
       const response = await api.get(`/users/${driverId}`);
 
       if (response.data?.success && response.data?.data) {
-        console.log("Driver details received:", response.data.data);
-        return response;
+        // Ajouter l'URL de l'avatar si elle existe
+        const driverData = response.data.data;
+        if (driverData.avatar?.data) {
+          driverData.avatarUrl = `data:${driverData.avatar.contentType};base64,${driverData.avatar.data}`;
+        }
+
+        console.log("Driver details received:", driverData);
+        return {
+          success: true,
+          data: driverData,
+        };
       } else {
         console.error("Invalid response format:", response.data);
         throw new Error("Format de réponse invalide");
