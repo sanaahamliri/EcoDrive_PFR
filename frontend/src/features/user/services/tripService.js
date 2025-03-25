@@ -114,23 +114,32 @@ class TripService {
       const response = await api.get("/rides/my-bookings");
 
       if (response.data?.data) {
-        // Charger les détails complets de chaque conducteur
-        for (const trip of response.data.data) {
-          if (trip.driver?._id) {
-            try {
-              const driverResponse = await this.getDriverDetails(
-                trip.driver._id
-              );
-              if (driverResponse?.data?.data) {
-                trip.driver = driverResponse.data.data;
+        const updatedTrips = await Promise.all(
+          response.data.data.map(async (trip) => {
+            if (trip.driver?._id) {
+              try {
+                const driverResponse = await this.getDriverDetails(
+                  trip.driver._id
+                );
+                if (driverResponse?.data) {
+                  trip.driver = {
+                    ...trip.driver,
+                    ...driverResponse.data,
+                    driverInfo: driverResponse.data.driverInfo || {},
+                    stats: driverResponse.data.stats || {},
+                  };
+                }
+              } catch (error) {
+                console.error("Error loading driver details:", error);
               }
-            } catch (error) {
-              console.error("Error loading driver details:", error);
             }
-          }
-        }
+            return trip;
+          })
+        );
+
+        response.data.data = updatedTrips;
       }
-      console.log("response.data", response.data);
+      console.log("Final response data:", response.data);
       return response.data;
     } catch (error) {
       throw this.handleError(error);

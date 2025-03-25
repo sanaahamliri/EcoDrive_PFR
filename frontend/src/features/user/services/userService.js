@@ -16,7 +16,6 @@ class UserService {
 
   static async updateProfile(userData) {
     try {
-      // Log des données avant envoi
       console.log("Données envoyées au serveur:", userData);
 
       const response = await api.put("/api/v1/users/me", userData);
@@ -74,7 +73,6 @@ class UserService {
 
       console.log("Upload response in service:", response);
 
-      // Mise à jour des données de l'utilisateur dans le stockage local
       if (response.data?.success && response.data?.data?.avatar) {
         const currentUser = AuthService.getUser();
         if (currentUser) {

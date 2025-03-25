@@ -20,7 +20,6 @@ const MyTrips = () => {
     try {
       setLoading(true);
       const response = await UserTripService.getMyTrips();
-      // Filtrer les trajets en fonction de l'onglet actif
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -98,7 +97,6 @@ const MyTrips = () => {
     const departureTime = new Date(trip.departureTime);
     const now = new Date();
 
-    // Si la date de départ est dans le passé, on ne peut pas annuler
     if (departureTime < now) {
       console.log("Not cancellable: departure time is in the past");
       return false;
@@ -121,11 +119,15 @@ const MyTrips = () => {
         return;
       }
 
-      // Charger les détails complets du conducteur
       const response = await UserTripService.getDriverDetails(driver._id);
       if (response && response.data) {
         console.log("Driver details received:", response.data);
-        setSelectedDriver(response.data);
+        const driverData = {
+          ...response.data,
+          driverInfo: response.data.driverInfo || {},
+          stats: response.data.stats || {},
+        };
+        setSelectedDriver(driverData);
         setShowContactModal(true);
       }
     } catch (error) {

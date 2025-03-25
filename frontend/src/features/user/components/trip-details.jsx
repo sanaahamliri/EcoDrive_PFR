@@ -287,14 +287,11 @@ export default function TripDetails() {
                 <p className="text-gray-600 text-sm">
                   {trip.destination.address}
                 </p>
-                <p className="text-sm font-medium text-blue-600 mt-1">
-                  {formatTime(trip.arrivalTime)}
-                </p>
+               
               </div>
             </div>
           </div>
 
-          {/* Informations du conducteur et du véhicule */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t pt-6">
             {/* Conducteur */}
             <div className="space-y-4">
