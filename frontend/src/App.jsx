@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/protected/ProtectedRoute";
+import PublicRoute from "./components/protected/PublicRoute";
 import DriverLayout from "./features/driver/layouts/DriverLayout";
 
 // Pages publiques
@@ -33,8 +34,22 @@ function App() {
           <Route index element={<Home />} />
         </Route>
 
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
+        <Route
+          path="login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
         <Route path="trips/:id" element={<TripDetails />} />
 
         {/* Routes utilisateur avec MainLayout */}
