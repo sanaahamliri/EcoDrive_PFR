@@ -265,27 +265,45 @@ exports.getUserTrips = asyncHandler(async (req, res) => {
 });
 
 exports.getPublicProfile = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.params.id)
-    .select(
-      "firstName lastName avatar stats role driverInfo.carModel createdAt"
-    )
-    .populate({
-      path: "reviews",
-      select: "rating comment createdAt",
-      populate: {
-        path: "reviewer",
-        select: "firstName lastName avatar",
-      },
+  try {
+    console.log("Fetching public profile for user ID:", req.params.id);
+
+    const user = await User.findById(req.params.id)
+      .select(
+        "firstName lastName email phoneNumber avatar stats role driverInfo createdAt"
+      )
+      .lean();
+
+    console.log("User found:", user ? "Yes" : "No");
+    console.log("Driver info:", user?.driverInfo);
+
+    if (!user) {
+      return next(new ErrorResponse("Utilisateur non trouvé", 404));
+    }
+
+    // Convertir l'avatar en URL si nécessaire
+    if (user.avatar?.data) {
+      user.avatarUrl = `data:${user.avatar.contentType};base64,${user.avatar.data}`;
+    }
+    delete user.avatar;
+
+    console.log("Sending response with user data:", {
+      hasDriverInfo: !!user.driverInfo,
+      driverInfo: user.driverInfo,
     });
 
-  if (!user) {
-    return next(new ErrorResponse("Utilisateur non trouvé", 404));
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.error("Error in getPublicProfile:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la récupération du profil",
+      error: error.message,
+    });
   }
-
-  res.status(200).json({
-    success: true,
-    data: user,
-  });
 });
 
 exports.checkUploads = asyncHandler(async (req, res) => {

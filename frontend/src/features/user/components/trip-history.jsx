@@ -172,8 +172,24 @@ export default function TripHistory() {
     document.body.removeChild(link);
   };
 
-  const handleShowContact = (driver) => {
-    setSelectedDriver(driver);
+  const handleShowContact = async (driver) => {
+    try {
+      if (!driver || !driver._id) {
+        console.error("Données du conducteur manquantes");
+        return;
+      }
+
+      // Charger les détails complets du conducteur
+      const response = await TripService.getDriverDetails(driver._id);
+      if (response && response.data) {
+        setSelectedDriver(response.data);
+      }
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des données du conducteur:",
+        error
+      );
+    }
   };
 
   const handleCloseContact = () => {

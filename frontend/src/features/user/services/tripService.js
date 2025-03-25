@@ -114,9 +114,21 @@ class TripService {
       const response = await api.get("/rides/my-bookings");
 
       if (response.data?.data) {
-        response.data.data.forEach((trip) => {
-          this.updateLocalDriverData(trip);
-        });
+        // Charger les détails complets de chaque conducteur
+        for (const trip of response.data.data) {
+          if (trip.driver?._id) {
+            try {
+              const driverResponse = await this.getDriverDetails(
+                trip.driver._id
+              );
+              if (driverResponse?.data?.data) {
+                trip.driver = driverResponse.data.data;
+              }
+            } catch (error) {
+              console.error("Error loading driver details:", error);
+            }
+          }
+        }
       }
 
       return response.data;
@@ -178,6 +190,27 @@ class TripService {
         error.response?.data?.message ||
         "Une erreur est survenue lors de la récupération des détails du trajet"
       );
+    }
+  }
+
+  async getDriverDetails(driverId) {
+    try {
+      console.log("Fetching driver details for ID:", driverId);
+      const response = await api.get(`/users/${driverId}`);
+
+      if (response.data?.success && response.data?.data) {
+        console.log("Driver details received:", response.data.data);
+        return response;
+      } else {
+        console.error("Invalid response format:", response.data);
+        throw new Error("Format de réponse invalide");
+      }
+    } catch (error) {
+      console.error("Error fetching driver details:", error);
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw new Error("Erreur lors de la récupération du profil");
     }
   }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import UserTripService from "../services/tripService";
 import Avatar from "../../../components/Avatar";
+import ContactModal from "./ContactModal";
 
 const MyTrips = () => {
   const [activeTab, setActiveTab] = useState("upcoming");
@@ -113,9 +114,25 @@ const MyTrips = () => {
     return hoursUntilDeparture >= 24;
   };
 
-  const handleContactDriver = (driver) => {
-    setSelectedDriver(driver);
-    setShowContactModal(true);
+  const handleContactDriver = async (driver) => {
+    try {
+      if (!driver || !driver._id) {
+        console.error("Données du conducteur manquantes");
+        return;
+      }
+
+      // Charger les détails complets du conducteur
+      const response = await UserTripService.getDriverDetails(driver._id);
+      if (response && response.data) {
+        setSelectedDriver(response.data);
+        setShowContactModal(true);
+      }
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des données du conducteur:",
+        error
+      );
+    }
   };
 
   if (loading) {
@@ -315,17 +332,20 @@ const MyTrips = () => {
                             <div className="space-y-1">
                               <div className="text-sm">
                                 <span className="font-medium">Modèle:</span>{" "}
-                                {trip.vehicle?.model || "Non spécifié"}
+                                {trip.driver?.driverInfo?.carModel ||
+                                  "Non spécifié"}
                               </div>
                               <div className="text-sm">
-                                <span className="font-medium">Couleur:</span>{" "}
-                                {trip.vehicle?.color || "Non spécifié"}
+                                <span className="font-medium">Année:</span>{" "}
+                                {trip.driver?.driverInfo?.carYear ||
+                                  "Non spécifié"}
                               </div>
                               <div className="text-sm">
                                 <span className="font-medium">
                                   Immatriculation:
                                 </span>{" "}
-                                {trip.vehicle?.plate || "Non spécifié"}
+                                {trip.driver?.driverInfo?.licensePlate ||
+                                  "Non spécifié"}
                               </div>
                             </div>
                           </div>
@@ -520,17 +540,20 @@ const MyTrips = () => {
                           <div className="space-y-1">
                             <div className="text-sm">
                               <span className="font-medium">Modèle:</span>{" "}
-                              {trip.vehicle?.model || "Non spécifié"}
+                              {trip.driver?.driverInfo?.carModel ||
+                                "Non spécifié"}
                             </div>
                             <div className="text-sm">
-                              <span className="font-medium">Couleur:</span>{" "}
-                              {trip.vehicle?.color || "Non spécifié"}
+                              <span className="font-medium">Année:</span>{" "}
+                              {trip.driver?.driverInfo?.carYear ||
+                                "Non spécifié"}
                             </div>
                             <div className="text-sm">
                               <span className="font-medium">
                                 Immatriculation:
                               </span>{" "}
-                              {trip.vehicle?.plate || "Non spécifié"}
+                              {trip.driver?.driverInfo?.licensePlate ||
+                                "Non spécifié"}
                             </div>
                           </div>
                         </div>
@@ -608,61 +631,10 @@ const MyTrips = () => {
 
       {/* Modal de contact */}
       {showContactModal && selectedDriver && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Contacter le conducteur</h3>
-              <button
-                onClick={() => setShowContactModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div className="flex items-center space-x-3 mb-4">
-              <Avatar
-                src={selectedDriver.avatar}
-                size={48}
-                alt={`${selectedDriver.firstName} ${selectedDriver.lastName}`}
-              />
-              <div>
-                <div className="font-medium">
-                  {selectedDriver.firstName} {selectedDriver.lastName}
-                </div>
-                <div className="text-sm text-gray-500">Conducteur</div>
-              </div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm text-gray-500 mb-2">
-                Numéro de téléphone
-              </div>
-              <div className="text-lg font-semibold text-green-600">
-                {selectedDriver.phone || "Non disponible"}
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setShowContactModal(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
+        <ContactModal
+          driver={selectedDriver}
+          onClose={() => setShowContactModal(false)}
+        />
       )}
     </div>
   );
