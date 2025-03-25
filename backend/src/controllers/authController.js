@@ -2,7 +2,6 @@ const User = require('../models/User');
 const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('../middlewares/async');
 
-// Helper function to get token from model, create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
   const token = user.getSignedJwtToken();
 
@@ -34,7 +33,6 @@ const sendTokenResponse = (user, statusCode, res) => {
 exports.register = asyncHandler(async (req, res, next) => {
   const { firstName, lastName, email, password, role, phoneNumber } = req.body;
 
-  // Créer l'utilisateur
   const user = await User.create({
     firstName,
     lastName,
@@ -53,19 +51,16 @@ exports.register = asyncHandler(async (req, res, next) => {
 exports.login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 
-  // Valider l'email et le mot de passe
   if (!email || !password) {
     return next(new ErrorResponse('Veuillez fournir un email et un mot de passe', 400));
   }
 
-  // Vérifier l'utilisateur
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
   
   if (!user) {
     return next(new ErrorResponse('Identifiants invalides', 401));
   }
 
-  // Vérifier si le mot de passe correspond
   const isMatch = await user.matchPassword(password);
   
   if (!isMatch) {
