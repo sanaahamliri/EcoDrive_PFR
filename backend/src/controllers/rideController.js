@@ -80,7 +80,6 @@ exports.getRides = asyncHandler(async (req, res) => {
   if (startIndex > 0) {
     pagination.prev = { page: page - 1, limit };
   }
-
   res.status(200).json({
     success: true,
     count: total,
@@ -313,7 +312,8 @@ exports.getMyRides = asyncHandler(async (req, res) => {
   const rides = await Ride.find({ driver: req.user.id })
     .populate("passengers.user", "firstName lastName avatar")
     .sort({ departureTime: -1 });
-
+  console.log("my ride");
+  console.log(rides);
   res.status(200).json({
     success: true,
     count: rides.length,

@@ -29,6 +29,7 @@ export default function TripHistory() {
       if (!driverAvatars[driverId]) {
         const response = await UserService.getProfile(driverId);
         if (response.data?.data?.avatar) {
+          console.log("Driver avatar URL:", response.data.data.avatar);
           setDriverAvatars((prev) => ({
             ...prev,
             [driverId]: response.data.data.avatar,
@@ -389,7 +390,8 @@ export default function TripHistory() {
                           <Avatar
                             src={
                               driverAvatars[trip.driver._id] ||
-                              trip.driver.avatar
+                              trip.driver.avatar ||
+                              "default-avatar-url.jpg"
                             }
                             size={32}
                             alt={`${trip.driver.firstName} ${trip.driver.lastName}`}

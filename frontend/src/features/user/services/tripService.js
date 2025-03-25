@@ -130,7 +130,7 @@ class TripService {
           }
         }
       }
-
+      console.log("response.data", response.data);
       return response.data;
     } catch (error) {
       throw this.handleError(error);

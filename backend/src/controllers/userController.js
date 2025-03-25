@@ -281,11 +281,6 @@ exports.getPublicProfile = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse("Utilisateur non trouvé", 404));
     }
 
-    // Convertir l'avatar en URL si nécessaire
-    if (user.avatar?.data) {
-      user.avatarUrl = `data:${user.avatar.contentType};base64,${user.avatar.data}`;
-    }
-    delete user.avatar;
 
     console.log("Sending response with user data:", {
       hasDriverInfo: !!user.driverInfo,

@@ -124,6 +124,8 @@ const MyTrips = () => {
       // Charger les détails complets du conducteur
       const response = await UserTripService.getDriverDetails(driver._id);
       if (response && response.data) {
+        console.log("Driver details received:", response.data);
+        console.log("Driver avatar URL:", response.data.avatarUrl);
         setSelectedDriver(response.data);
         setShowContactModal(true);
       }
@@ -142,7 +144,7 @@ const MyTrips = () => {
       </div>
     );
   }
-
+  console.log(trips);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -298,11 +300,13 @@ const MyTrips = () => {
                               Conducteur
                             </h3>
                             <div className="flex items-center space-x-3">
-                              <Avatar
-                                src={trip.driver?.avatar}
-                                size={48}
-                                alt={`${trip.driver?.firstName} ${trip.driver?.lastName}`}
-                              />
+                              <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white shadow">
+                                <Avatar
+                                  src={trip.driver?.avatar}
+                                  size={48}
+                                  alt={trip.driver?.firstName || "Conducteur"}
+                                />
+                              </div>
                               <div>
                                 <div className="font-medium">
                                   {trip.driver?.firstName}{" "}
@@ -508,7 +512,9 @@ const MyTrips = () => {
                           </h3>
                           <div className="flex items-center space-x-3">
                             <Avatar
-                              src={trip.driver?.avatar}
+                              src={
+                                trip.driver?.avatar || "default-avatar-url.jpg"
+                              }
                               size={48}
                               alt={`${trip.driver?.firstName} ${trip.driver?.lastName}`}
                             />
