@@ -13,7 +13,7 @@ const User = require("../models/User");
 
 const router = express.Router();
 
-const { protect, authorize } = require("../middlewares/auth");
+const { protect } = require("../middlewares/auth");
 
 // Protéger toutes les routes
 router.use(protect);

@@ -2,8 +2,7 @@ import {
   Zap,
   CreditCard,
   CheckCircle,
-  MapPin,
-  Search,
+  
   Users,
   Calendar,
 } from "lucide-react";
@@ -13,7 +12,6 @@ import casablancaImg from "../assets/images/destinations/casablanca.jpg";
 import marrakechImg from "../assets/images/destinations/marrakesh.jpg";
 import agadirImg from "../assets/images/destinations/agadir.jpg";
 import tangerImg from "../assets/images/destinations/tanger.jpeg";
-import heroImg from "../assets/images/hero/hero.jpg";
 
 export default function Home() {
   const destinations = [
@@ -226,12 +224,12 @@ export default function Home() {
               >
                 Proposer un trajet
               </Link>
-              <a
+              <button
                 href="#"
                 className="border border-[#12AD90] text-[#12AD90] hover:bg-[#12AD90]/10 font-medium py-2 px-4 rounded-md transition-colors"
               >
                 En savoir plus
-              </a>
+              </button>
             </div>
           </div>
 
@@ -345,12 +343,11 @@ export default function Home() {
             >
               S'inscrire gratuitement
             </Link>
-            <a
-              href="#"
+            <button
               className="border border-white text-white hover:bg-white/20 font-medium px-8 py-3 rounded-md text-lg inline-block transition-colors"
             >
               Comment ça marche
-            </a>
+            </button>
           </div>
         </div>
       </div>

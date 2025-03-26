@@ -12,7 +12,6 @@ const fs = require("fs");
 
 dotenv.config();
 console.log(process.env.MONGODB_URI);
-// Connect to MongoDB
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log("MongoDB Connected"))
@@ -35,10 +34,8 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Cookie parser
 app.use(cookieParser());
 
-// Configuration CORS détaillée
 app.use(
   cors({
     origin: ["http://localhost:3000", "http://localhost:3001"],
@@ -49,7 +46,6 @@ app.use(
   })
 );
 
-// Route de test pour vérifier l'accès aux fichiers
 app.get("/api/check-file/:filename", (req, res) => {
   const filePath = path.join(__dirname, "../uploads", req.params.filename);
   if (fs.existsSync(filePath)) {
@@ -59,21 +55,17 @@ app.get("/api/check-file/:filename", (req, res) => {
   }
 });
 
-// Dev logging middleware
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// Security headers
 app.use(helmet());
 
-// Ajoutez ce middleware de logging pour déboguer les requêtes
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.originalUrl}`);
   next();
 });
 
-// Middleware de logging pour les requêtes de fichiers
 app.use("/uploads", (req, res, next) => {
   console.log("File request:", {
     url: req.url,
@@ -84,7 +76,6 @@ app.use("/uploads", (req, res, next) => {
   next();
 });
 
-// Welcome route
 app.get("/", (req, res) => {
   res.json({ message: "Bienvenue sur l'API EcoDrive" });
 });

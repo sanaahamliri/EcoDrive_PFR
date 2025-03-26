@@ -4,9 +4,7 @@ const ErrorResponse = require("../utils/errorResponse");
 const asyncHandler = require("../middlewares/async");
 const Review = require("../models/Review");
 
-// @desc    Créer un nouveau trajet
 exports.createRide = asyncHandler(async (req, res) => {
-  // Vérifier si l'utilisateur est un conducteur
   if (req.user.role !== "driver") {
     return res.status(403).json({
       success: false,
@@ -14,7 +12,6 @@ exports.createRide = asyncHandler(async (req, res) => {
     });
   }
 
-  // Vérifier si le profil conducteur est complet
   const user = await User.findById(req.user.id);
   if (!user.isDriverProfileComplete()) {
     return res.status(400).json({
@@ -36,7 +33,6 @@ exports.createRide = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Obtenir tous les trajets avec filtres
 exports.getRides = asyncHandler(async (req, res) => {
   let query = {};
 
@@ -90,7 +86,6 @@ exports.getRides = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Obtenir un trajet spécifique
 exports.getRide = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id)
     .populate(
@@ -111,7 +106,6 @@ exports.getRide = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Mettre à jour un trajet
 exports.updateRide = asyncHandler(async (req, res, next) => {
   let ride = await Ride.findById(req.params.id);
 
@@ -125,7 +119,6 @@ exports.updateRide = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Non autorisé à modifier ce trajet`, 401));
   }
 
-  // Restriction de la modification
   if (ride.passengers.length > 0) {
     if (req.body.availableSeats) {
       const totalBookedSeats = ride.passengers.reduce((total, passenger) => {
@@ -172,7 +165,6 @@ exports.updateRide = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Supprimer un trajet
 exports.deleteRide = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
@@ -215,7 +207,6 @@ exports.deleteRide = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Réserver un trajet
 exports.bookRide = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
@@ -255,7 +246,6 @@ exports.bookRide = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Annuler une réservation
 exports.cancelBooking = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
@@ -284,7 +274,6 @@ exports.cancelBooking = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Vérifier si le trajet est à moins de 24h du départ
   const departureTime = new Date(ride.departureTime);
   const now = new Date();
   const hoursUntilDeparture = (departureTime - now) / (1000 * 60 * 60);
@@ -406,7 +395,6 @@ exports.rejectBooking = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Obtenir les réservations de l'utilisateur connecté
 exports.getMyBookings = asyncHandler(async (req, res) => {
   const rides = await Ride.find({
     "passengers.user": req.user.id,
@@ -433,7 +421,6 @@ exports.getMyBookings = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Noter un trajet
 exports.rateTrip = asyncHandler(async (req, res, next) => {
   const ride = await Ride.findById(req.params.id);
 
@@ -443,7 +430,6 @@ exports.rateTrip = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Vérifier que l'utilisateur était passager
   const wasPassenger = ride.passengers.some(
     (p) => p.user.toString() === req.user.id
   );
@@ -456,7 +442,6 @@ exports.rateTrip = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Vérifier si l'utilisateur a déjà noté ce trajet
   const existingReview = await Review.findOne({
     ride: ride._id,
     reviewer: req.user.id,
@@ -466,7 +451,6 @@ exports.rateTrip = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Vous avez déjà noté ce trajet", 400));
   }
 
-  // Créer la review
   const review = await Review.create({
     rating: req.body.rating,
     comment: req.body.comment,
@@ -476,7 +460,6 @@ exports.rateTrip = asyncHandler(async (req, res, next) => {
     type: "passenger",
   });
 
-  // Mettre à jour la note moyenne du conducteur
   const reviews = await Review.find({ reviewedUser: ride.driver });
   const avgRating =
     reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;

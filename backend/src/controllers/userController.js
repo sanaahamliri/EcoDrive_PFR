@@ -3,6 +3,7 @@ const ErrorResponse = require("../utils/errorResponse");
 const asyncHandler = require("../middlewares/async");
 const path = require("path");
 const fs = require("fs");
+const Ride = require("../models/Ride");
 
 exports.getProfile = asyncHandler(async (req, res) => {
   try {

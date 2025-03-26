@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import rideService from "../services/tripService";
 import AuthService from "../../../services/authService";
 import Avatar from "../../../components/Avatar";
@@ -20,11 +20,47 @@ const TripSearch = () => {
     date: "",
     seats: "",
   });
-  const [userData, setUserData] = useState(AuthService.getUser());
+
+  const fetchTrips = useCallback(
+    async (filters = null) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        console.log("Fetching trips with filters:", filters || {});
+        const response = await rideService.searchRides(
+          filters || {},
+          pagination.currentPage
+        );
+        console.log("Received trips:", response);
+
+        setTrips(response.data || []);
+        setPagination({
+          currentPage: response.currentPage,
+          totalPages: response.totalPages,
+          hasNext: response.pagination?.next !== undefined,
+          hasPrev: response.pagination?.prev !== undefined,
+        });
+
+        console.log(
+          "Trip data structure:",
+          JSON.stringify(response.data?.[0], null, 2)
+        );
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching trips:", error);
+        setTrips([]);
+        setError(
+          "Impossible de charger les trajets. Veuillez réessayer plus tard."
+        );
+        setLoading(false);
+      }
+    },
+    [pagination.currentPage]
+  );
 
   useEffect(() => {
     const unsubscribe = AuthService.subscribe(() => {
-      setUserData(AuthService.getUser());
       fetchTrips({});
     });
     fetchTrips({});
@@ -34,42 +70,7 @@ const TripSearch = () => {
         unsubscribe();
       }
     };
-  }, []);
-
-  const fetchTrips = async (filters = null) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log("Fetching trips with filters:", filters || {});
-      const response = await rideService.searchRides(
-        filters || {},
-        pagination.currentPage
-      );
-      console.log("Received trips:", response);
-
-      setTrips(response.data || []);
-      setPagination({
-        currentPage: response.currentPage,
-        totalPages: response.totalPages,
-        hasNext: response.pagination?.next !== undefined,
-        hasPrev: response.pagination?.prev !== undefined,
-      });
-
-      console.log(
-        "Trip data structure:",
-        JSON.stringify(response.data?.[0], null, 2)
-      );
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching trips:", error);
-      setTrips([]);
-      setError(
-        "Impossible de charger les trajets. Veuillez réessayer plus tard."
-      );
-      setLoading(false);
-    }
-  };
+  }, [fetchTrips]);
 
   const handleBooking = async (rideId, seats = 1) => {
     try {
@@ -653,5 +654,4 @@ const TripSearch = () => {
     </div>
   );
 };
-
 export default TripSearch;

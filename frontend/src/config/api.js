@@ -73,15 +73,4 @@ api.interceptors.response.use(
   }
 );
 
-// Fonction utilitaire pour vérifier si le token est expiré
-const isTokenExpired = (token) => {
-  if (!token) return true;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.exp < Date.now() / 1000;
-  } catch (e) {
-    return true;
-  }
-};
-
 export default api;

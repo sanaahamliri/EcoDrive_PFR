@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import TripService from "../services/tripService";
 import AuthService from "../../../services/authService";
@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import axios from "axios";
 import ContactModal from "./ContactModal";
 import Avatar from "../../../components/Avatar";
 
@@ -24,33 +23,13 @@ export default function TripDetails() {
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
-  const [userComment, setUserComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
-  const [reviews, setReviews] = useState([]);
   const [userReview, setUserReview] = useState(null);
-  const [userData, setUserData] = useState(AuthService.getUser());
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const unsubscribe = AuthService.subscribe(() => {
-      setUserData(AuthService.getUser());
-      if (id) {
-        loadTripDetails();
-      }
-    });
-
-    return () => unsubscribe();
-  }, [id]);
-
-  useEffect(() => {
-    if (id) {
-      loadTripDetails();
-    }
-  }, [id]);
-
-  const loadTripDetails = async () => {
+  const loadTripDetails = useCallback(async () => {
     try {
       setLoading(true);
       const response = await TripService.getTripDetails(id);
@@ -59,7 +38,6 @@ export default function TripDetails() {
         try {
           const reviewsResponse = await TripService.getReviews(id);
           const userReview = reviewsResponse.data.userReview;
-          setReviews(reviewsResponse.data.reviews);
 
           if (userReview) {
             setUserRating(userReview.rating);
@@ -84,7 +62,23 @@ export default function TripDetails() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    const unsubscribe = AuthService.subscribe(() => {
+      if (id) {
+        loadTripDetails();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [id, loadTripDetails]);
+
+  useEffect(() => {
+    if (id) {
+      loadTripDetails();
+    }
+  }, [id, loadTripDetails]);
 
   const handleRatingSubmit = async () => {
     if (!userRating) {
@@ -287,7 +281,6 @@ export default function TripDetails() {
                 <p className="text-gray-600 text-sm">
                   {trip.destination.address}
                 </p>
-               
               </div>
             </div>
           </div>

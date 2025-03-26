@@ -1,5 +1,4 @@
 import api from "../../../config/axios";
-import { API_URL } from "../../../config/constants";
 import AuthService from "../../../services/authService";
 
 class UserService {

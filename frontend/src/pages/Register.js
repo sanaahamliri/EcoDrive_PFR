@@ -271,10 +271,10 @@ const Register = () => {
               <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
                 <span className="text-xs text-gray-500">© 2025 EcoDrive</span>
                 <div className="flex space-x-4">
-                  <a href="#" className="text-xs text-gray-500 hover:text-[#12AD90]">
+                  <a href="/" className="text-xs text-gray-500 hover:text-[#12AD90]">
                     Conditions
                   </a>
-                  <a href="#" className="text-xs text-gray-500 hover:text-[#12AD90]">
+                  <a href="/" className="text-xs text-gray-500 hover:text-[#12AD90]">
                     Confidentialité
                   </a>
                 </div>

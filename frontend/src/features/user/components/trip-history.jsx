@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import TripService from "../services/tripService";
 import UserService from "../services/userService";
@@ -20,28 +20,27 @@ export default function TripHistory() {
   const searchTimeoutRef = React.useRef(null);
   const [driverAvatars, setDriverAvatars] = React.useState({});
 
-  React.useEffect(() => {
-    loadTrips();
-  }, [filters]);
-
-  const loadDriverAvatar = async (driverId) => {
-    try {
-      if (!driverAvatars[driverId]) {
-        const response = await UserService.getProfile(driverId);
-        if (response.data?.data?.avatar) {
-          console.log("Driver avatar URL:", response.data.data.avatar);
-          setDriverAvatars((prev) => ({
-            ...prev,
-            [driverId]: response.data.data.avatar,
-          }));
+  const loadDriverAvatar = useCallback(
+    async (driverId) => {
+      try {
+        if (!driverAvatars[driverId]) {
+          const response = await UserService.getProfile(driverId);
+          if (response.data?.data?.avatar) {
+            console.log("Driver avatar URL:", response.data.data.avatar);
+            setDriverAvatars((prev) => ({
+              ...prev,
+              [driverId]: response.data.data.avatar,
+            }));
+          }
         }
+      } catch (error) {
+        console.error("Erreur lors du chargement de l'avatar:", error);
       }
-    } catch (error) {
-      console.error("Erreur lors du chargement de l'avatar:", error);
-    }
-  };
+    },
+    [driverAvatars]
+  );
 
-  const loadTrips = async () => {
+  const loadTrips = useCallback(async () => {
     try {
       setLoading(true);
       const response = await TripService.getMyTrips();
@@ -104,7 +103,11 @@ export default function TripHistory() {
       setLoading(false);
       console.error("Erreur lors du chargement des trajets:", error);
     }
-  };
+  }, [filters, loadDriverAvatar]);
+
+  React.useEffect(() => {
+    loadTrips();
+  }, [loadTrips]);
 
   const handleFilterChange = (filterType, value) => {
     setFilters((prev) => ({

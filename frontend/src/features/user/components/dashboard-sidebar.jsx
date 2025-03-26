@@ -1,24 +1,8 @@
 import React, { useState, useEffect } from "react";
 import UserService from "../services/userService";
 import { toast } from "react-toastify";
-import { API_URL } from "../../../config/constants";
 import AuthService from "../../../services/authService";
 import { useNavigate } from "react-router-dom";
-
-const getBackgroundColor = (name) => {
-  const colors = [
-    "bg-blue-600",
-    "bg-green-600",
-    "bg-purple-600",
-    "bg-yellow-600",
-    "bg-red-600",
-    "bg-indigo-600",
-  ];
-  const index =
-    name?.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
-    colors.length;
-  return colors[index];
-};
 
 export default function DashboardSidebar({
   activeView,
@@ -92,9 +76,7 @@ export default function DashboardSidebar({
     return colors[sum % colors.length];
   };
 
-  const isDefaultAvatar = (avatar) => {
-    return !avatar || avatar === "default-avatar.jpg";
-  };
+ 
 
   const handleLogout = async () => {
     try {

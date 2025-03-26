@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import UserService from "../services/userService";
 import { toast } from "react-toastify";
-import { API_URL } from "../../../config/constants";
-import Avatar from "../../../components/Avatar";
 import * as Yup from "yup";
 import { Formik, Field } from "formik";
 
@@ -24,26 +22,11 @@ const ProfileValidationSchema = Yup.object().shape({
 });
 
 const UserProfile = () => {
-  const [activeTab, setActiveTab] = useState("personal");
   const [userData, setUserData] = useState({});
   const [loading, setLoading] = useState(true);
-  const [preferences, setPreferences] = useState({
-    language: "fr",
-    notifications: {
-      email: true,
-      push: true,
-    },
-    travelPreferences: {
-      smoking: false,
-      music: true,
-      pets: false,
-      conversation: "moderate",
-    },
-  });
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-
 
   useEffect(() => {
     loadUserProfile();
@@ -89,136 +72,6 @@ const UserProfile = () => {
       const errorMessage = error.response?.data?.message || error.message;
       toast.error(`Erreur: ${errorMessage}`);
     }
-  };
-
-  const handlePreferencesUpdate = async () => {
-    try {
-      const preferencesData = {
-        language: "fr",
-        notifications: {
-          email: true,
-          push: true,
-        },
-        travelPreferences: {
-          smoking: preferences.smoking,
-          music: preferences.music,
-          pets: preferences.pets,
-          conversation: preferences.conversation,
-        },
-      };
-
-      await UserService.updatePreferences(preferencesData);
-      toast.success("Préférences mises à jour avec succès");
-    } catch (error) {
-      toast.error("Erreur lors de la mise à jour des préférences");
-      console.error("Error updating preferences:", error);
-    }
-  };
-
-  const getInitials = (firstName, lastName) => {
-    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : "";
-    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : "";
-    return `${firstInitial}${lastInitial}`;
-  };
-
-  const getAvatarColor = (name) => {
-    const colors = [
-      "bg-blue-600",
-      "bg-green-600",
-      "bg-purple-600",
-      "bg-pink-600",
-      "bg-yellow-600",
-      "bg-red-600",
-      "bg-indigo-600",
-    ];
-
-    if (!name) return colors[0];
-
-    const charCodes = name.split("").map((char) => char.charCodeAt(0));
-    const sum = charCodes.reduce((acc, curr) => acc + curr, 0);
-    return colors[sum % colors.length];
-  };
-
-  const isDefaultAvatar = (avatar) => {
-    return !avatar;
-  };
-
-  const checkUploads = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/v1/users/check-uploads`);
-      const data = await response.json();
-      console.log("Uploads check:", data);
-    } catch (error) {
-      console.error("Error checking uploads:", error);
-    }
-  };
-
-  const handlePhotoUpload = async (event) => {
-    try {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      console.log("File to upload:", {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        lastModified: file.lastModified,
-      });
-
-      const formData = new FormData();
-      formData.append("photo", file);
-
-      toast.info("Upload en cours...");
-
-      const response = await UserService.uploadProfilePhoto(formData);
-      console.log("Upload response in component:", response);
-
-      if (response.data.success) {
-        console.log("New avatar URL:", response.data.data.avatarUrl);
-
-        setUserData((prev) => ({
-          ...prev,
-          avatarUrl: response.data.data.avatarUrl,
-        }));
-
-        toast.success("Photo de profil mise à jour avec succès");
-      }
-    } catch (error) {
-      console.error("Error uploading photo:", error);
-      toast.error(
-        error.response?.data?.message ||
-          "Erreur lors du téléchargement de la photo"
-      );
-    }
-  };
-
-  const getPreferenceLabel = (key) => {
-    const labels = {
-      smoking: "Non-fumeur",
-      music: "Musique",
-      pets: "Animaux",
-      conversation: "Conversation",
-      airConditioning: "Climatisation",
-    };
-    return labels[key] || key;
-  };
-
-  const getPreferenceDescription = (key) => {
-    const descriptions = {
-      smoking: "Préférence pour les trajets sans fumée",
-      music: "Préférence pour la musique pendant le trajet",
-      pets: "Accepte les animaux pendant le trajet",
-      conversation: "Préférence pour les conversations pendant le trajet",
-      airConditioning: "Préférence pour les véhicules climatisés",
-    };
-    return descriptions[key] || "";
-  };
-
-  const handlePreferenceChange = (preference, value) => {
-    setPreferences((prev) => ({
-      ...prev,
-      [preference]: value,
-    }));
   };
 
   const loadUserProfile = async () => {
@@ -359,7 +212,7 @@ const UserProfile = () => {
 
         <div className="space-y-6">
           <div className="pt-4">
-            {activeTab === "personal" && (
+            
               <div className="rounded-lg bg-white shadow">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold">
@@ -562,136 +415,8 @@ const UserProfile = () => {
                   </Formik>
                 </div>
               </div>
-            )}
 
-            {activeTab === "preferences" && (
-              <div className="rounded-lg bg-white shadow">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold">
-                    Préférences de trajet
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Personnalisez vos préférences pour les trajets
-                  </p>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="space-y-4">
-                    {Object.entries(preferences).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="space-y-0.5">
-                          <label className="block text-sm font-medium text-gray-700">
-                            {getPreferenceLabel(key)}
-                          </label>
-                          <p className="text-sm text-gray-500">
-                            {getPreferenceDescription(key)}
-                          </p>
-                        </div>
-                        <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                          <input
-                            type="checkbox"
-                            id={key}
-                            className="sr-only"
-                            checked={value}
-                            onChange={(e) =>
-                              handlePreferenceChange(key, e.target.checked)
-                            }
-                          />
-                          <div className="block h-6 bg-gray-300 rounded-full w-10"></div>
-                          <div
-                            className={`dot absolute left-1 top-1 h-4 w-4 bg-white rounded-full transition ${
-                              value ? "translate-x-4" : ""
-                            }`}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-4">
-                    <button
-                      onClick={handlePreferencesUpdate}
-                      className="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
-                    >
-                      Enregistrer les préférences
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "payment" && (
-              <div className="rounded-lg bg-white shadow">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold">
-                    Méthodes de paiement
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Gérez vos méthodes de paiement
-                  </p>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="rounded-lg border p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="rounded-md bg-green-100 p-2">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-green-600"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            Visa se terminant par 4242
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Expire le 12/25
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-                          Modifier
-                        </button>
-                        <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-                          Supprimer
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button className="inline-flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="mr-2 h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
-                    Ajouter une nouvelle méthode de paiement
-                  </button>
-                </div>
-              </div>
-            )}
+          
           </div>
         </div>
       </div>

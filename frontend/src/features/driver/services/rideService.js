@@ -123,4 +123,5 @@ class DriverRideService {
   }
 }
 
-export default new DriverRideService();
+const rideService = new DriverRideService();
+export default rideService;

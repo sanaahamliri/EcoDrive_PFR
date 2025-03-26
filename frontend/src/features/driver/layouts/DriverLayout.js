@@ -3,8 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthService from "../../../services/authService";
 import api from "../../../config/axios";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
-const DEFAULT_AVATAR = "/images/default-avatar.png";
 
 const navigation = [
   { name: "Tableau de bord", href: "/driver/dashboard", icon: "🏠" },

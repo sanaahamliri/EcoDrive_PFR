@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import UserTripService from "../services/tripService";
 import Avatar from "../../../components/Avatar";
 import ContactModal from "./ContactModal";
@@ -12,11 +12,7 @@ const MyTrips = () => {
   const [showContactModal, setShowContactModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
 
-  useEffect(() => {
-    fetchTrips();
-  }, [activeTab]);
-
-  const fetchTrips = async () => {
+  const fetchTrips = useCallback(async () => {
     try {
       setLoading(true);
       const response = await UserTripService.getMyTrips();
@@ -43,7 +39,11 @@ const MyTrips = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchTrips();
+  }, [fetchTrips]);
 
   const handleCancelBooking = async (rideId) => {
     try {

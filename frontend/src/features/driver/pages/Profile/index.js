@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DriverService from "../../services/driverService";
 import { toast } from "react-toastify";
-import { API_URL } from "../../../../config/constants";
 import * as Yup from "yup";
 import { Formik, Field } from "formik";
 
@@ -37,7 +36,6 @@ const ProfileValidationSchema = Yup.object().shape({
 const DriverProfile = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("personal");
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = React.createRef();
@@ -70,33 +68,7 @@ const DriverProfile = () => {
     }
   };
 
-  const handlePhotoUpload = async (event) => {
-    try {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const formData = new FormData();
-      formData.append("photo", file);
-
-      toast.info("Upload en cours...");
-
-      const response = await DriverService.uploadProfilePhoto(formData);
-
-      if (response.data.success) {
-        setUserData((prev) => ({
-          ...prev,
-          avatarUrl: response.data.data.avatarUrl,
-        }));
-        toast.success("Photo de profil mise à jour avec succès");
-      }
-    } catch (error) {
-      console.error("Error uploading photo:", error);
-      toast.error(
-        error.response?.data?.message ||
-          "Erreur lors du téléchargement de la photo"
-      );
-    }
-  };
+  
 
   const handleProfileUpdate = async (values) => {
     try {

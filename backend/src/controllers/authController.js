@@ -30,7 +30,7 @@ const sendTokenResponse = (user, statusCode, res) => {
 // @desc    S'inscrire
 // @route   POST /api/v1/auth/register
 // @access  Public
-exports.register = asyncHandler(async (req, res, next) => {
+exports.register = asyncHandler(async (req, res) => {
   const { firstName, lastName, email, password, role, phoneNumber } = req.body;
 
   const user = await User.create({
@@ -73,7 +73,7 @@ exports.login = asyncHandler(async (req, res, next) => {
 // @desc    Déconnexion / Effacer le cookie
 // @route   GET /api/v1/auth/logout
 // @access  Public
-exports.logout = asyncHandler(async (req, res, next) => {
+exports.logout = asyncHandler(async (req, res) => {
   res.cookie('token', 'none', {
     expires: new Date(Date.now() + 10 * 1000),
     httpOnly: true
@@ -88,7 +88,7 @@ exports.logout = asyncHandler(async (req, res, next) => {
 // @desc    Obtenir l'utilisateur actuel
 // @route   GET /api/v1/auth/me
 // @access  Private
-exports.getMe = asyncHandler(async (req, res, next) => {
+exports.getMe = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
   res.status(200).json({
     success: true,

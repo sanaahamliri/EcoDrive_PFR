@@ -1,9 +1,8 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import AuthService from "../../services/authService";
 
 const PublicRoute = ({ children }) => {
-  const location = useLocation();
   const isAuthenticated = AuthService.isAuthenticated();
   const user = AuthService.getUser();
 
